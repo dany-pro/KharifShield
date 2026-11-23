@@ -1,0 +1,3416 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KharifShield — Smart Water Planner for Telangana Maize</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Telugu:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans Telugu', 'sans-serif'],
+          },
+          colors: {
+            forest: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              300: '#86efac',
+              400: '#4ade80',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            },
+            harvest: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              200: '#fde68a',
+              300: '#fcd34d',
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+              800: '#92400e',
+              900: '#78350f',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans Telugu', sans-serif;
+      overflow-x: hidden;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Opening Splash Screen */
+    @keyframes splashFadeOut {
+      0% { opacity: 1; transform: scale(1); }
+      75% { opacity: 1; transform: scale(1.015); }
+      100% { opacity: 0; transform: scale(1.04); pointer-events: none; }
+    }
+    @keyframes splashBob {
+      0%, 100% { transform: translateY(0) rotate(-3deg); }
+      50% { transform: translateY(-9px) rotate(4deg); }
+    }
+    .splash-overlay {
+      animation: splashFadeOut 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .splash-corn {
+      animation: splashBob 0.8s ease-in-out infinite;
+    }
+
+    /* Smooth hover-pop zoom animations */
+    .pop-card {
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.22s ease;
+    }
+    .pop-card:hover {
+      transform: translateY(-2px) scale(1.012);
+      box-shadow: 0 14px 28px -8px rgba(20, 83, 45, 0.16);
+    }
+    .dark .pop-card:hover {
+      box-shadow: 0 14px 28px -8px rgba(0, 0, 0, 0.5);
+    }
+
+    .pop-btn {
+      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+    .pop-btn:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 10px 20px -6px rgba(20, 83, 45, 0.24);
+    }
+    .pop-btn:active:not(:disabled) {
+      transform: translateY(0) scale(0.985);
+    }
+
+    .pop-tile {
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease, border-color 0.2s ease, background-color 0.2s ease;
+    }
+    .pop-tile:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 10px 22px -6px rgba(22, 101, 52, 0.18);
+    }
+
+    /* STRICT DARK MODE SELECTED CARD FIX — Never white in Dark Mode */
+    .selected-option-card {
+      background-color: #f0fdf4 !important;
+      border-color: #166534 !important;
+      color: #0f172a !important;
+    }
+    .dark .selected-option-card {
+      background-color: #133a27 !important;
+      border-color: #34d399 !important;
+      color: #ecfdf5 !important;
+    }
+    .dark .selected-option-card .opt-title {
+      color: #ecfdf5 !important;
+    }
+    .dark .selected-option-card .opt-sub {
+      color: #a7f3d0 !important;
+    }
+
+    .unselected-option-card {
+      background-color: #fafaf9;
+      border-color: #e7e5e4;
+    }
+    .dark .unselected-option-card {
+      background-color: #1e293b;
+      border-color: #334155;
+    }
+
+    /* Active Tab Styling (Crisp in both Light & Dark Mode) */
+    .active-nav-tab {
+      background-color: #ffffff;
+      color: #14532d;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .dark .active-nav-tab {
+      background-color: #133a27 !important;
+      color: #ecfdf5 !important;
+      border: 1px solid #34d399;
+    }
+
+    /* Green pop animation on Soil card selection */
+    @keyframes greenSelectPop {
+      0% { transform: scale(0.96); }
+      55% { transform: scale(1.035); }
+      100% { transform: scale(1); }
+    }
+    .soil-selected-pop {
+      animation: greenSelectPop 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Mic active pulse ring */
+    @keyframes micPulse {
+      0% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.65); }
+      70% { box-shadow: 0 0 0 14px rgba(217, 119, 6, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
+    }
+    .mic-active {
+      animation: micPulse 1.25s infinite;
+    }
+
+    /* Sunrise Maize Hero Gradient */
+    .sunrise-banner {
+      background: linear-gradient(135deg, #fef3c7 0%, #dcfce7 52%, #bbf7d0 100%);
+    }
+    .dark .sunrise-banner {
+      background: linear-gradient(135deg, #272011 0%, #122b1c 55%, #0f172a 100%);
+    }
+
+    /* Subtle maize-blueprint SVG pattern on side margins */
+    .maize-margin-svg {
+      pointer-events: none;
+      opacity: 0.14;
+    }
+    .dark .maize-margin-svg {
+      opacity: 0.11;
+    }
+
+    /* Tour highlight ring with active glow */
+    @keyframes tourGlowPulse {
+      0%, 100% { box-shadow: 0 0 0 4px #f59e0b, 0 20px 38px -10px rgba(245, 158, 11, 0.35); }
+      50% { box-shadow: 0 0 0 7px #fbbf24, 0 22px 44px -8px rgba(245, 158, 11, 0.52); }
+    }
+    .tour-focus-ring {
+      position: relative;
+      z-index: 45;
+      animation: tourGlowPulse 1.6s ease-in-out infinite;
+      border-radius: 1.5rem;
+    }
+
+    /* Guide Me minimized pill highlight pulse */
+    @keyframes tourPillPulse {
+      0%, 100% { box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.45); }
+      50% { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.45), 0 12px 28px -5px rgba(217, 119, 6, 0.65); }
+    }
+    .tour-minimized-pulse {
+      animation: tourPillPulse 0.9s ease-in-out 2;
+    }
+  </style>
+</head>
+<body class="bg-[#fafaf9] text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen relative selection:bg-forest-200 selection:text-forest-900">
+
+  <!-- OPENING SPLASH ANIMATION OVERLAY -->
+  <div id="opening-splash" class="splash-overlay fixed inset-0 z-[10100] bg-gradient-to-br from-[#14532d] via-[#166534] to-amber-700 text-white flex flex-col items-center justify-center p-6 text-center">
+    <div class="splash-corn text-6xl sm:text-7xl mb-3 select-none">🌽</div>
+    <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight">KharifShield</h1>
+    <p class="text-xs sm:text-sm font-bold text-amber-200 mt-1.5">Smart Water Planner for Telangana Maize</p>
+    <div class="mt-4 flex items-center gap-2 text-xs font-semibold text-emerald-100">
+      <span class="w-2 h-2 rounded-full bg-amber-300 animate-ping"></span>
+      <span>Zero Sensors • Zero Hardware • 33 Telangana Districts</span>
+    </div>
+  </div>
+
+  <!-- SUBTLE MAIZE-BLUEPRINT SVG PATTERN ON LEFT & RIGHT MARGINS -->
+  <svg class="maize-margin-svg hidden xl:block fixed left-2 top-24 w-36 h-[560px] text-[#14532d] dark:text-emerald-400" viewBox="0 0 140 560" fill="none" stroke="currentColor" stroke-width="1.35">
+    <path d="M70 40 L70 520" stroke-dasharray="4 4" />
+    <path d="M70 450 C34 428, 18 392, 12 360 C42 372, 62 404, 70 450 Z" />
+    <path d="M70 385 C106 363, 122 327, 128 295 C98 307, 78 339, 70 385 Z" />
+    <path d="M70 315 C30 293, 14 252, 8 220 C40 233, 60 265, 70 315 Z" />
+    <path d="M70 245 C110 223, 126 182, 132 150 C100 163, 80 195, 70 245 Z" />
+    <ellipse cx="94" cy="255" rx="13" ry="34" transform="rotate(22 94 255)" />
+    <path d="M70 115 L50 62 M70 115 L70 48 M70 115 L90 62 M70 98 L42 78 M70 98 L98 78" />
+    <text x="14" y="544" font-size="9" fill="currentColor" stroke="none">KHARIF MAIZE • TELANGANA</text>
+  </svg>
+
+  <svg class="maize-margin-svg hidden xl:block fixed right-2 top-24 w-36 h-[560px] text-[#d97706] dark:text-amber-400" viewBox="0 0 140 560" fill="none" stroke="currentColor" stroke-width="1.35">
+    <path d="M70 40 L70 520" stroke-dasharray="4 4" />
+    <path d="M70 440 C106 418, 122 382, 128 350 C98 362, 78 394, 70 440 Z" />
+    <path d="M70 375 C34 353, 18 317, 12 285 C42 297, 62 329, 70 375 Z" />
+    <path d="M70 305 C110 283, 126 242, 132 210 C100 223, 80 255, 70 305 Z" />
+    <ellipse cx="46" cy="245" rx="13" ry="34" transform="rotate(-22 46 245)" />
+    <circle cx="70" cy="105" r="34" stroke-dasharray="3 3" />
+    <text x="16" y="544" font-size="9" fill="currentColor" stroke="none">LIVE RAIN ADVISOR</text>
+  </svg>
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-white/95 dark:bg-slate-900/95 border-b border-stone-200 dark:border-slate-800 shadow-sm">
+    <div class="max-w-5xl mx-auto px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2">
+      <!-- Static, Clean KharifShield Logo -->
+      <div id="brand-logo" class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl bg-forest-50 dark:bg-[#133a27] border-2 border-forest-300 dark:border-emerald-400 text-left shadow-sm select-none">
+        <span class="text-2xl sm:text-3xl leading-none">🌽</span>
+        <div>
+          <span class="font-extrabold text-base sm:text-lg tracking-tight text-[#14532d] dark:text-[#ecfdf5] block leading-tight">KharifShield</span>
+          <span class="text-[11px] font-extrabold text-[#b45309] dark:text-amber-300 block leading-tight" data-i18n="brandSub">Telangana Maize Planner</span>
+        </div>
+      </div>
+
+      <!-- Top Bar Controls: Language Switcher, Guide Me, Dark/Light Mode -->
+      <div class="flex items-center gap-1.5 sm:gap-2.5">
+        <button id="lang-switch-btn" type="button" class="pop-btn inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-[#166534] hover:bg-[#14532d] dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white shadow-sm cursor-pointer">
+          <span>🌐</span>
+          <span id="lang-switch-text">తెలుగు</span>
+        </button>
+
+        <button id="guide-tour-btn" type="button" class="pop-btn inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-extrabold bg-[#d97706] hover:bg-amber-500 text-white shadow-sm cursor-pointer">
+          <span>🧭</span>
+          <span data-i18n="guideMeBtn">Guide Me</span>
+        </button>
+
+        <button id="dark-mode-btn" type="button" class="pop-btn inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold bg-stone-100 hover:bg-stone-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-stone-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 cursor-pointer">
+          <span id="dark-mode-icon">🌙</span>
+          <span class="hidden sm:inline" id="dark-mode-label" data-i18n="darkModeBtn">Dark Mode</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CYCLONE / HEAVY RAIN ALERT BANNER -->
+  <div id="cyclone-alert-banner" class="hidden bg-red-600 text-white px-4 py-3.5 shadow-lg border-b-2 border-red-800">
+    <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl animate-bounce">⛈️</span>
+        <div>
+          <p class="font-extrabold text-sm sm:text-base" data-i18n="cycloneTitle">HEAVY RAIN / CYCLONE ALERT: PAUSE PUMPING IMMEDIATELY!</p>
+          <p class="text-xs sm:text-sm text-red-100" data-i18n="cycloneDesc">Heavy rainfall (>30 mm) forecast in the next 3 days. Keep borewell switched off and clear field water drains.</p>
+        </div>
+      </div>
+      <button id="banner-stop-cyclone-btn" type="button" class="pop-btn px-3.5 py-1.5 rounded-xl bg-white text-red-700 font-extrabold text-xs shrink-0 cursor-pointer" data-i18n="turnOffCycloneBtn">
+        Turn Off Simulator
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-5xl mx-auto px-3 sm:px-6 pt-5 pb-28">
+
+    <!-- 2-Tab Switcher: Farmer App vs How It Works (Judges) -->
+    <div class="flex p-1.5 rounded-2xl bg-stone-200/85 dark:bg-slate-800/90 border border-stone-300/70 dark:border-slate-700 mb-6 max-w-md mx-auto">
+      <button id="nav-tab-farmer" type="button" class="pop-btn active-nav-tab flex-1 py-2.5 px-4 rounded-xl text-sm font-extrabold cursor-pointer" data-i18n="tabFarmer">
+        🌾 Farmer App
+      </button>
+      <button id="nav-tab-judges" type="button" class="pop-btn flex-1 py-2.5 px-4 rounded-xl text-sm font-extrabold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white cursor-pointer" data-i18n="tabJudges">
+        ⚖️ How It Works (Judges)
+      </button>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: FARMER APP                                                     -->
+    <!-- ===================================================================== -->
+    <div id="view-farmer-app" class="space-y-7">
+
+      <!-- Sunrise Maize Field Hero Banner -->
+      <section class="sunrise-banner pop-card rounded-3xl p-5 sm:p-7 border border-forest-200/90 dark:border-emerald-900/70 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/85 dark:bg-[#133a27] border border-forest-300 dark:border-emerald-500 text-xs font-extrabold text-[#14532d] dark:text-[#ecfdf5] mb-2.5">
+              <span>🌅</span>
+              <span data-i18n="heroBadge">Zero Sensors • Zero Hardware • 33 Telangana Districts</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mb-2" data-i18n="heroHeadline">
+              Smart Water Timing for Kharif Maize — Zero Sensors, Zero Hardware
+            </h1>
+            <p class="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-relaxed" data-i18n="heroSubtext">
+              Protect your harvest during critical Cob-Forming weeks using live 3-day rain forecasts, local soil type, and your borewell water reserve.
+            </p>
+          </div>
+          <div class="bg-white/90 dark:bg-[#133a27] backdrop-blur-sm p-4 rounded-2xl border border-amber-300/80 dark:border-emerald-500 shrink-0 flex items-center gap-3">
+            <span class="text-3xl">💧</span>
+            <div>
+              <div class="text-xs font-bold text-slate-500 dark:text-emerald-200" data-i18n="heroSideTag">Peak Maize Priority</div>
+              <div class="text-sm font-extrabold text-[#166534] dark:text-[#ecfdf5]" data-i18n="heroSideVal">Weeks 5–10 (Cob-Forming)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 1 OF 2: YOUR FARM DETAILS -->
+      <section id="step1-section" class="pop-card bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border border-stone-200 dark:border-slate-800 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-100 dark:border-slate-800">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-[#166534] dark:text-emerald-400" data-i18n="step1Badge">Step 1 of 2</span>
+              <span id="step1-active-pill" class="hidden inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[11px] font-extrabold animate-pulse" data-i18n="activeStepPill">
+                ● Active Now
+              </span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-0.5" data-i18n="step1Heading">Your Farm Details</h2>
+          </div>
+
+          <!-- Speak Details Mic Button -->
+          <div class="flex items-center gap-2">
+            <button id="speak-details-btn" type="button" class="pop-btn inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-harvest-100 hover:bg-harvest-200 dark:bg-amber-900/60 dark:hover:bg-amber-800/80 border border-harvest-300 dark:border-amber-500 text-harvest-900 dark:text-amber-100 font-extrabold text-sm cursor-pointer">
+              <span class="text-lg">🎙️</span>
+              <span id="speak-details-label" data-i18n="speakDetailsBtn">Speak Details</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Continuous Voice Live Transcript & Sandbox Fallback Box -->
+        <div id="voice-feedback-box" class="hidden p-4 rounded-2xl bg-amber-50 dark:bg-slate-800 border border-amber-300 dark:border-amber-500 text-sm space-y-2.5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p id="voice-feedback-title" class="font-extrabold text-amber-900 dark:text-amber-200"></p>
+              <p id="voice-feedback-detail" class="text-xs text-amber-800 dark:text-amber-100 mt-0.5"></p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button id="stop-listening-btn" type="button" class="hidden px-2.5 py-1 rounded-lg bg-[#166534] text-white text-xs font-extrabold cursor-pointer">Done ✓</button>
+              <button id="close-voice-feedback" type="button" class="px-2 py-1 rounded-lg bg-red-600 text-white text-xs font-extrabold cursor-pointer">✕</button>
+            </div>
+          </div>
+
+          <!-- Inline Sandbox Fallback (Shown only if iframe blocks hardware mic) -->
+          <div id="sandbox-voice-fallback" class="hidden pt-2 border-t border-amber-200 dark:border-slate-700 space-y-2">
+            <p class="text-[11px] font-bold text-amber-900 dark:text-amber-200" data-i18n="sandboxMicHint">
+              Preview sandbox blocked live mic access — type or tap a spoken phrase below to test the parser (works with live mic when opened directly in Chrome):
+            </p>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" class="sample-voice-chip pop-btn px-2.5 py-1 rounded-lg bg-white dark:bg-[#133a27] border border-amber-300 dark:border-emerald-500 text-slate-800 dark:text-[#ecfdf5] text-[11px] font-bold cursor-pointer" data-phrase="Dammaiguda 6 weeks black soil 75 percent">
+                "Dammaiguda, 6 weeks, black soil, 75%"
+              </button>
+              <button type="button" class="sample-voice-chip pop-btn px-2.5 py-1 rounded-lg bg-white dark:bg-[#133a27] border border-amber-300 dark:border-emerald-500 text-slate-800 dark:text-[#ecfdf5] text-[11px] font-bold cursor-pointer" data-phrase="బాచుపల్లి 20 రోజులు మిక్స్డ్ నేల 50 శాతం">
+                "బాచుపల్లి, 20 రోజులు, మిక్స్డ్ నేల, 50%"
+              </button>
+              <button type="button" class="sample-voice-chip pop-btn px-2.5 py-1 rounded-lg bg-white dark:bg-[#133a27] border border-amber-300 dark:border-emerald-500 text-slate-800 dark:text-[#ecfdf5] text-[11px] font-bold cursor-pointer" data-phrase="Delhi 2 months red soil 25 percent">
+                "Delhi, 2 months, red soil, 25%"
+              </button>
+            </div>
+            <div class="flex gap-2">
+              <input id="sandbox-voice-input" type="text" class="flex-1 rounded-xl border border-amber-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-1.5 text-xs" placeholder="Type spoken phrase to test parser..." />
+              <button id="sandbox-voice-apply-btn" type="button" class="pop-btn px-3 py-1.5 rounded-xl bg-[#d97706] text-white text-xs font-extrabold cursor-pointer">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outside Telangana Polite Warning -->
+        <div id="outside-telangana-alert" class="hidden p-3.5 rounded-2xl bg-orange-50 dark:bg-orange-950/60 border border-orange-300 dark:border-orange-500 text-orange-900 dark:text-orange-100 text-sm flex items-start gap-2.5">
+          <span class="text-xl">⚠️</span>
+          <div>
+            <p class="font-extrabold" data-i18n="outsideTitle">Outside Telangana Location Spoken</p>
+            <p class="text-xs mt-0.5" data-i18n="outsideDesc">KharifShield is calibrated for Telangana's 33 districts. Using nearest Telangana baseline (Hyderabad / Rangareddy).</p>
+          </div>
+        </div>
+
+        <!-- Row 1: District & Crop Age -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- 1. District (Telangana) -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label for="district-dropdown" class="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                <span>📍</span>
+                <span data-i18n="labelDistrict">1. District (Telangana)</span>
+              </label>
+              <button type="button" class="popover-trigger pop-btn w-6 h-6 rounded-full bg-stone-200 dark:bg-slate-700 text-xs font-extrabold text-slate-700 dark:text-slate-100 flex items-center justify-center cursor-pointer" data-help="helpDistrict">?</button>
+            </div>
+            <select id="district-dropdown" class="pop-tile w-full rounded-2xl border border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-800 px-3.5 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#166534] dark:focus:border-emerald-400">
+              <!-- All 33 Telangana Districts populated by JS -->
+            </select>
+            <p id="urban-district-note" class="hidden text-xs font-semibold text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/50 px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-700"></p>
+          </div>
+
+          <!-- 2. Crop Age -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label for="crop-age-dropdown" class="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                <span>🌱</span>
+                <span data-i18n="labelCropAge">2. Crop Age</span>
+              </label>
+              <button type="button" class="popover-trigger pop-btn w-6 h-6 rounded-full bg-stone-200 dark:bg-slate-700 text-xs font-extrabold text-slate-700 dark:text-slate-100 flex items-center justify-center cursor-pointer" data-help="helpCropAge">?</button>
+            </div>
+            <select id="crop-age-dropdown" class="pop-tile w-full rounded-2xl border border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-800 px-3.5 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#166534] dark:focus:border-emerald-400">
+              <option value="young" data-i18n="ageOptYoung">1. Young Plants (Weeks 1–4)</option>
+              <option value="tassel" selected data-i18n="ageOptTassel">2. Cob-Forming Stage ★ (Weeks 5–10)</option>
+              <option value="cobfill" data-i18n="ageOptCobFill">3. Grain Filling (Weeks 11+)</option>
+            </select>
+            <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="ageHelperSub">Voice supports "20 days", "6 weeks", "2 months", or "5 to 10 weeks".</p>
+          </div>
+        </div>
+
+        <!-- 3. Soil Type: 3 Visual Soil Tap Cards (Dark Mode readable!) -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <span>🟤</span>
+              <span data-i18n="labelSoilType">3. Soil Type</span>
+            </span>
+            <button type="button" class="popover-trigger pop-btn w-6 h-6 rounded-full bg-stone-200 dark:bg-slate-700 text-xs font-extrabold text-slate-700 dark:text-slate-100 flex items-center justify-center cursor-pointer" data-help="helpSoilType">?</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5" id="soil-cards-group">
+            <button type="button" data-soil="red" class="soil-tap-card unselected-option-card pop-tile text-left p-4 rounded-2xl border-2 cursor-pointer">
+              <div class="flex items-center justify-between mb-1">
+                <span class="w-5 h-5 rounded-full bg-amber-700 inline-block border border-white shadow-sm"></span>
+                <span class="soil-check-badge text-xs font-extrabold text-[#166534] dark:text-emerald-300 hidden">✓ Selected</span>
+              </div>
+              <div class="opt-title font-extrabold text-sm text-slate-900 dark:text-white" data-i18n="soilRedTitle">Red Soil</div>
+              <div class="opt-sub text-xs text-slate-600 dark:text-slate-300 mt-0.5" data-i18n="soilRedDesc">Drains fast, needs lighter frequent watering</div>
+            </button>
+
+            <button type="button" data-soil="mixed" class="soil-tap-card selected-option-card pop-tile text-left p-4 rounded-2xl border-2 cursor-pointer">
+              <div class="flex items-center justify-between mb-1">
+                <span class="w-5 h-5 rounded-full bg-amber-900 inline-block border border-white shadow-sm"></span>
+                <span class="soil-check-badge text-xs font-extrabold text-[#166534] dark:text-emerald-300">✓ Selected</span>
+              </div>
+              <div class="opt-title font-extrabold text-sm text-slate-900 dark:text-white" data-i18n="soilMixedTitle">Mixed Soil</div>
+              <div class="opt-sub text-xs text-slate-600 dark:text-slate-300 mt-0.5" data-i18n="soilMixedDesc">Balanced soil moisture holding</div>
+            </button>
+
+            <button type="button" data-soil="black" class="soil-tap-card unselected-option-card pop-tile text-left p-4 rounded-2xl border-2 cursor-pointer">
+              <div class="flex items-center justify-between mb-1">
+                <span class="w-5 h-5 rounded-full bg-stone-800 inline-block border border-white shadow-sm"></span>
+                <span class="soil-check-badge text-xs font-extrabold text-[#166534] dark:text-emerald-300 hidden">✓ Selected</span>
+              </div>
+              <div class="opt-title font-extrabold text-sm text-slate-900 dark:text-white" data-i18n="soilBlackTitle">Black Soil</div>
+              <div class="opt-sub text-xs text-slate-600 dark:text-slate-300 mt-0.5" data-i18n="soilBlackDesc">Holds water nearly twice as long</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. Borewell Water Left: 4 Interactive Tank % Bars (Dark Mode readable!) -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <span>💧</span>
+              <span data-i18n="labelWaterLeft">4. Borewell Water Left</span>
+            </span>
+            <button type="button" class="popover-trigger pop-btn w-6 h-6 rounded-full bg-stone-200 dark:bg-slate-700 text-xs font-extrabold text-slate-700 dark:text-slate-100 flex items-center justify-center cursor-pointer" data-help="helpWaterLeft">?</button>
+          </div>
+
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="water-tank-group">
+            <button type="button" data-tank="25" class="tank-tap-btn unselected-option-card pop-tile p-3.5 rounded-2xl border-2 text-left cursor-pointer">
+              <div class="opt-title text-sm font-extrabold text-slate-900 dark:text-white" data-i18n="tank25Title">25% Low</div>
+              <div class="opt-sub text-[11px] font-semibold text-slate-500 dark:text-slate-300" data-i18n="tank25Sub">About 1 watering left</div>
+              <div class="w-full h-2.5 rounded-full bg-stone-200 dark:bg-slate-700 mt-2 overflow-hidden">
+                <div class="h-full bg-red-500 rounded-full" style="width: 25%"></div>
+              </div>
+            </button>
+
+            <button type="button" data-tank="50" class="tank-tap-btn selected-option-card pop-tile p-3.5 rounded-2xl border-2 text-left cursor-pointer">
+              <div class="opt-title text-sm font-extrabold text-slate-900 dark:text-white" data-i18n="tank50Title">50% Half</div>
+              <div class="opt-sub text-[11px] font-semibold text-slate-600 dark:text-slate-300" data-i18n="tank50Sub">About 2 waterings left</div>
+              <div class="w-full h-2.5 rounded-full bg-stone-200 dark:bg-slate-700 mt-2 overflow-hidden">
+                <div class="h-full bg-amber-500 rounded-full" style="width: 50%"></div>
+              </div>
+            </button>
+
+            <button type="button" data-tank="75" class="tank-tap-btn unselected-option-card pop-tile p-3.5 rounded-2xl border-2 text-left cursor-pointer">
+              <div class="opt-title text-sm font-extrabold text-slate-900 dark:text-white" data-i18n="tank75Title">75% Good</div>
+              <div class="opt-sub text-[11px] font-semibold text-slate-500 dark:text-slate-300" data-i18n="tank75Sub">About 3 waterings left</div>
+              <div class="w-full h-2.5 rounded-full bg-stone-200 dark:bg-slate-700 mt-2 overflow-hidden">
+                <div class="h-full bg-sky-500 rounded-full" style="width: 75%"></div>
+              </div>
+            </button>
+
+            <button type="button" data-tank="100" class="tank-tap-btn unselected-option-card pop-tile p-3.5 rounded-2xl border-2 text-left cursor-pointer">
+              <div class="opt-title text-sm font-extrabold text-slate-900 dark:text-white" data-i18n="tank100Title">100% Full</div>
+              <div class="opt-sub text-[11px] font-semibold text-slate-500 dark:text-slate-300" data-i18n="tank100Sub">About 4 waterings left</div>
+              <div class="w-full h-2.5 rounded-full bg-stone-200 dark:bg-slate-700 mt-2 overflow-hidden">
+                <div class="h-full bg-emerald-500 rounded-full" style="width: 100%"></div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Inline Help Popover Box -->
+        <div id="help-popover-box" class="hidden p-3.5 rounded-2xl bg-sky-50 dark:bg-slate-800 border border-sky-200 dark:border-sky-500 text-sky-900 dark:text-sky-100 text-xs sm:text-sm flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">💡</span>
+            <span id="help-popover-content"></span>
+          </div>
+          <button id="close-help-popover" type="button" class="px-2 py-1 rounded-lg bg-red-600 text-white font-extrabold text-xs cursor-pointer">✕</button>
+        </div>
+
+        <!-- Primary Action Button: Check My Water Plan -->
+        <div>
+          <button id="check-water-plan-btn" type="button" class="pop-btn w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#14532d] via-[#166534] to-emerald-700 hover:from-[#166534] hover:to-emerald-600 text-white font-extrabold text-base sm:text-lg shadow-lg flex items-center justify-center gap-2.5 cursor-pointer">
+            <span id="plan-btn-spinner" class="hidden w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span id="plan-btn-icon">💦</span>
+            <span id="plan-btn-text" data-i18n="checkPlanBtn">Check My Water Plan</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- STEP 2 OF 2: YOUR WATER PLAN SUMMARY -->
+      <section id="step2-section" class="pop-card bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border border-stone-200 dark:border-slate-800 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-100 dark:border-slate-800">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-[#166534] dark:text-emerald-400" data-i18n="step2Badge">Step 2 of 2</span>
+              <span id="step2-ready-pill" class="pop-tile inline-flex items-center gap-1.5 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-600">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                <span data-i18n="planReadyTag">✓ Water Plan Ready</span>
+              </span>
+              <span id="rain-source-pill" class="pop-tile text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-forest-100 dark:bg-[#133a27] text-[#14532d] dark:text-emerald-200 border border-transparent dark:border-emerald-500">Open-Meteo Live</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-0.5">
+              <span data-i18n="step2Heading">Your Water Plan Summary</span> — <span id="plan-district-title" class="text-[#166534] dark:text-emerald-300">Warangal</span>
+            </h2>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="read-summary-aloud-btn" type="button" class="pop-btn inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-forest-100 hover:bg-forest-200 dark:bg-[#133a27] dark:hover:bg-[#184730] border border-transparent dark:border-emerald-400 text-[#14532d] dark:text-[#ecfdf5] font-extrabold text-xs sm:text-sm cursor-pointer">
+              <span>🔊</span>
+              <span data-i18n="readSummaryBtn">Read Summary Aloud</span>
+            </button>
+
+            <button id="open-detailed-report-btn" type="button" class="pop-btn inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-[#d97706] dark:hover:bg-amber-500 text-white font-extrabold text-xs sm:text-sm cursor-pointer">
+              <span>📋</span>
+              <span data-i18n="detailedReportBtn">View Detailed Report</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Today's Clear Action Banner -->
+        <div id="action-headline-box" class="pop-card rounded-2xl p-4 sm:p-5 bg-gradient-to-r from-[#14532d] to-[#166534] text-white shadow-sm">
+          <div class="text-xs font-bold uppercase tracking-wider text-amber-300 mb-1" data-i18n="actionBannerTag">Today's Clear Action</div>
+          <h3 id="action-headline-text" class="text-lg sm:text-xl font-extrabold leading-snug">
+            Give Light Watering Between Rows Today — Cob-Forming Priority
+          </h3>
+        </div>
+
+        <!-- What to Do Today & Why This Protects Your Crop -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="pop-card rounded-2xl p-4 sm:p-5 bg-forest-50/90 dark:bg-[#133a27]/70 border border-forest-200 dark:border-emerald-700">
+            <div class="flex items-center gap-2 text-[#14532d] dark:text-emerald-300 font-extrabold text-sm mb-1.5">
+              <span>✅</span>
+              <span data-i18n="whatToDoLabel">What to Do Today</span>
+            </div>
+            <p id="what-to-do-body" class="text-sm font-semibold text-slate-900 dark:text-[#ecfdf5] leading-relaxed"></p>
+          </div>
+
+          <div class="pop-card rounded-2xl p-4 sm:p-5 bg-harvest-50/90 dark:bg-amber-950/40 border border-harvest-200 dark:border-amber-700">
+            <div class="flex items-center gap-2 text-harvest-800 dark:text-amber-300 font-extrabold text-sm mb-1.5">
+              <span>🛡️</span>
+              <span data-i18n="whyProtectsLabel">Why This Protects Your Crop</span>
+            </div>
+            <p id="why-protects-body" class="text-sm font-medium text-slate-800 dark:text-amber-50 leading-relaxed"></p>
+          </div>
+        </div>
+
+        <!-- Key Metrics Row (3 Hover-Popping Cards) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Metric 1: 3-Day Rain Forecast -->
+          <div class="pop-card rounded-2xl p-4 bg-sky-50/85 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-700">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-sky-800 dark:text-sky-300" data-i18n="metricRainTitle">3-Day Rain Forecast</span>
+              <span class="text-lg">🌦️</span>
+            </div>
+            <div class="text-2xl font-extrabold text-slate-900 dark:text-white" id="metric-rain-mm">12 mm</div>
+            <div class="text-xs font-semibold text-sky-800 dark:text-sky-200 mt-1" id="metric-rain-days">Today 2mm • Tom 6mm • Day 3 4mm</div>
+          </div>
+
+          <!-- Metric 2: Harvest Protected (%) -->
+          <div class="pop-card rounded-2xl p-4 bg-emerald-50/85 dark:bg-[#133a27]/70 border border-emerald-200 dark:border-emerald-700">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300" data-i18n="metricHarvestTitle">Harvest Protected (%)</span>
+              <span class="text-lg">🌽</span>
+            </div>
+            <div class="text-2xl font-extrabold text-emerald-700 dark:text-emerald-300" id="metric-harvest-pct">75.6%</div>
+            <div class="w-full h-2 bg-emerald-200 dark:bg-emerald-950 rounded-full overflow-hidden mt-2">
+              <div id="metric-harvest-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 75.6%"></div>
+            </div>
+          </div>
+
+          <!-- Metric 3: Best Stage Priority -->
+          <div class="pop-card rounded-2xl p-4 bg-amber-50/85 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-700">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300" data-i18n="metricPriorityTitle">Best Stage Priority</span>
+              <span class="text-lg">⭐</span>
+            </div>
+            <div class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white" id="metric-priority-val" data-i18n="metricPriorityStage">Weeks 5–10 (Cob-Forming)</div>
+            <div class="text-xs font-semibold text-amber-800 dark:text-amber-200 mt-1" data-i18n="metricPrioritySub">Highest harvest sensitivity window</div>
+          </div>
+        </div>
+
+        <!-- 3-Stage Water Split Breakdown -->
+        <div class="space-y-3">
+          <h3 class="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300" data-i18n="stageSplitTitle">
+            3-Stage Water Plan Breakdown
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Stage 1 -->
+            <div class="pop-tile rounded-2xl p-4 bg-stone-50 dark:bg-slate-800 border border-stone-200 dark:border-slate-700">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-extrabold text-[#166534] dark:text-emerald-300" data-i18n="stage1CardTitle">1. Weeks 1–4 (Small Plants)</span>
+                <span id="stage1-share" class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-forest-100 dark:bg-[#133a27] text-[#14532d] dark:text-emerald-200">15%</span>
+              </div>
+              <div id="stage1-dose" class="text-base font-extrabold text-slate-900 dark:text-white">0–1 Light Watering</div>
+              <p id="stage1-note" class="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed"></p>
+            </div>
+
+            <!-- Stage 2 (Starred Critical Stage) -->
+            <div class="pop-tile rounded-2xl p-4 bg-harvest-50/80 dark:bg-amber-950/40 border-2 border-[#d97706]">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-extrabold text-harvest-800 dark:text-amber-300" data-i18n="stage2CardTitle">2. Weeks 5–10 ★ (Cob-Forming)</span>
+                <span id="stage2-share" class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-[#d97706] text-white">60%</span>
+              </div>
+              <div id="stage2-dose" class="text-base font-extrabold text-slate-900 dark:text-white">1–2 Waterings</div>
+              <p id="stage2-note" class="text-xs text-slate-700 dark:text-amber-100 mt-1.5 leading-relaxed"></p>
+            </div>
+
+            <!-- Stage 3 -->
+            <div class="pop-tile rounded-2xl p-4 bg-stone-50 dark:bg-slate-800 border border-stone-200 dark:border-slate-700">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-extrabold text-sky-700 dark:text-sky-300" data-i18n="stage3CardTitle">3. Weeks 11+ (Ripening)</span>
+                <span id="stage3-share" class="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900 text-sky-800 dark:text-sky-200">25%</span>
+              </div>
+              <div id="stage3-dose" class="text-base font-extrabold text-slate-900 dark:text-white">1 Watering</div>
+              <p id="stage3-note" class="text-xs text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- OPEN HELP CHAT: FOR ANY OTHER HELP YOU CAN ASK KHARIFSHIELD AI -->
+      <section id="step3-section" class="pop-card bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border border-stone-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-[#166534] dark:text-emerald-400" data-i18n="step3Badge">Farm & Crop Helper</span>
+              <span id="step3-active-pill" class="hidden inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[11px] font-extrabold animate-pulse" data-i18n="activeStepPill">
+                ● Active Now
+              </span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-0.5" data-i18n="step3Heading">
+              For any other help, you can ask KharifShield AI
+            </h2>
+          </div>
+          <div class="flex items-center gap-2 self-start sm:self-auto">
+            <span id="ai-status-badge" class="text-xs font-extrabold px-3 py-1 rounded-full bg-stone-100 dark:bg-slate-800 text-slate-700 dark:text-emerald-300" data-i18n="aiOfflineTag">
+              Smart Maize Helper Ready
+            </span>
+            <button id="chat-clear-btn" type="button" class="pop-btn px-3 py-1 rounded-xl bg-stone-200 hover:bg-stone-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-extrabold cursor-pointer" data-i18n="clearBtn">
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick-Ask Chips (Farm-Specific Questions) -->
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="chat-suggestion-chip pop-btn px-3 py-1.5 rounded-xl bg-forest-50 hover:bg-forest-100 dark:bg-[#133a27] dark:hover:bg-[#184730] border border-forest-200 dark:border-emerald-600 text-xs font-extrabold text-[#14532d] dark:text-[#ecfdf5] cursor-pointer" data-i18n="chipSoilCheck">
+            How do I check soil moisture by hand?
+          </button>
+          <button type="button" class="chat-suggestion-chip pop-btn px-3 py-1.5 rounded-xl bg-harvest-50 hover:bg-harvest-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/70 border border-harvest-200 dark:border-amber-600 text-xs font-extrabold text-harvest-900 dark:text-amber-200 cursor-pointer" data-i18n="chipBestTime">
+            What is the best time of day to pump?
+          </button>
+          <button type="button" class="chat-suggestion-chip pop-btn px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900/70 border border-sky-200 dark:border-sky-600 text-xs font-extrabold text-sky-900 dark:text-sky-200 cursor-pointer" data-i18n="chipFertilizer">
+            When should I apply fertilizer with water?
+          </button>
+          <button type="button" class="chat-suggestion-chip pop-btn px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/70 border border-rose-200 dark:border-rose-600 text-xs font-extrabold text-rose-900 dark:text-rose-200 cursor-pointer" data-i18n="chipRain">
+            What if heavy rain floods my field?
+          </button>
+        </div>
+
+        <!-- Chat Voice Listening Banner -->
+        <div id="chat-voice-banner" class="hidden px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-slate-800 border border-amber-300 dark:border-amber-500 text-xs font-bold text-amber-900 dark:text-amber-200"></div>
+
+        <!-- Chat History Box -->
+        <div id="chat-history-box" class="space-y-3 max-h-96 overflow-y-auto p-3.5 rounded-2xl bg-stone-50 dark:bg-slate-950/80 border border-stone-200 dark:border-slate-800">
+          <!-- Initial greeting injected by JS -->
+        </div>
+
+        <!-- Chat Input Bar with Mic + Send -->
+        <div class="flex items-center gap-2">
+          <button id="chat-voice-btn" type="button" class="pop-btn p-3.5 rounded-2xl bg-harvest-100 hover:bg-harvest-200 dark:bg-amber-900/60 dark:hover:bg-amber-800 border border-harvest-300 dark:border-amber-500 text-harvest-900 dark:text-amber-100 shrink-0 cursor-pointer" aria-label="Speak question">
+            <span class="text-lg">🎙️</span>
+          </button>
+          <input id="chat-text-input" type="text" class="flex-1 rounded-2xl border border-stone-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-[#166534] dark:focus:border-emerald-400" placeholder="Ask about your farm, soil, rain, or borewell timing..." data-i18n-placeholder="chatInputPlaceholder" />
+          <button id="chat-send-btn" type="button" class="pop-btn px-5 py-3 rounded-2xl bg-[#166534] hover:bg-[#14532d] dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white font-extrabold text-sm shrink-0 cursor-pointer" data-i18n="chatSendBtn">
+            Send
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: HOW IT WORKS (JUDGES)                                          -->
+    <!-- ===================================================================== -->
+    <div id="view-judges-tab" class="hidden space-y-6">
+
+      <!-- LIVE EVALUATION CONTEXT BANNER (Shows selected District, Soil & Tank %) -->
+      <div class="pop-card rounded-2xl p-4 bg-[#14532d] dark:bg-[#133a27] border-2 border-emerald-400 text-white flex flex-wrap items-center justify-between gap-2 shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">📍</span>
+          <span id="judge-live-context-banner" class="text-xs sm:text-sm font-extrabold tracking-wide text-[#ecfdf5]">
+            Currently Evaluating: Warangal • Mixed Soil • 50% Tank
+          </span>
+        </div>
+        <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950" data-i18n="judgeLiveSyncTag">Synced with Farmer App</span>
+      </div>
+
+      <!-- 1. Dynamic District Maize Yield Benchmark Card (with 90% PI) -->
+      <section class="pop-card bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border border-stone-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-[#d97706] dark:text-amber-400" data-i18n="judgeBenchTag">Historical District Yield Reference</span>
+            <h2 id="judge-benchmark-heading" class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
+              Warangal Maize Benchmark
+            </h2>
+          </div>
+          <span id="judge-district-type-pill" class="pop-tile px-3 py-1 rounded-full text-xs font-extrabold bg-harvest-100 dark:bg-amber-900/60 text-harvest-900 dark:text-amber-200 self-start">
+            ★ Major Maize
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="pop-tile p-4 rounded-2xl bg-stone-50 dark:bg-slate-800 border border-stone-200 dark:border-slate-700">
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400" data-i18n="judgeYieldRangeLabel">District Yield Range (90% PI)</div>
+            <div id="judge-yield-range" class="text-xl font-extrabold text-[#166534] dark:text-emerald-300 mt-1">5.8 – 7.4 t/ha</div>
+            <div id="judge-yield-mean" class="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">Mean: 6.6 t/ha (90% Prediction Interval)</div>
+          </div>
+
+          <div class="pop-tile p-4 rounded-2xl bg-stone-50 dark:bg-slate-800 border border-stone-200 dark:border-slate-700">
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400" data-i18n="judgeRainNormalLabel">Seasonal Kharif Rainfall</div>
+            <div id="judge-rain-normal" class="text-xl font-extrabold text-sky-700 dark:text-sky-300 mt-1">830 mm</div>
+            <div id="judge-zone-label" class="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">Central Telangana Zone</div>
+          </div>
+
+          <div class="pop-tile p-4 rounded-2xl bg-stone-50 dark:bg-slate-800 border border-stone-200 dark:border-slate-700">
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400" data-i18n="judgeScaleNoteLabel">Benchmark Scope</div>
+            <div class="text-sm font-extrabold text-slate-900 dark:text-white mt-1" data-i18n="judgeScaleNoteTitle">District-Level Baseline</div>
+            <div class="text-xs text-slate-600 dark:text-slate-300 mt-0.5" data-i18n="judgeScaleNoteDesc">Reference baseline only — not a guaranteed plot-level yield promise.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Animated 4-Bar FAO-33 Yield Comparison Chart -->
+      <section class="pop-card bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border border-stone-200 dark:border-slate-800 shadow-sm space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-[#166534] dark:text-emerald-400" data-i18n="chartTag">FAO-33 Relative Yield Retention</span>
+            <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white" data-i18n="chartHeading">
+              Irrigation Schedule Yield Comparison
+            </h3>
+          </div>
+          <span id="chart-budget-pill" class="pop-tile px-3 py-1 rounded-full text-xs font-extrabold bg-forest-100 dark:bg-[#133a27] text-[#14532d] dark:text-emerald-200 border border-transparent dark:border-emerald-500 self-start">
+            50% Tank
+          </span>
+        </div>
+
+        <!-- Visual Vertical Comparison Bars -->
+        <div class="grid grid-cols-4 gap-2 sm:gap-4 items-end h-44 pt-4 px-3 sm:px-6 rounded-2xl bg-stone-50 dark:bg-slate-950/70 border border-stone-200 dark:border-slate-800">
+          <div class="pop-tile flex flex-col items-center h-full justify-end pb-2 cursor-pointer">
+            <span id="vbar-label-early" class="text-xs sm:text-sm font-extrabold text-red-600 dark:text-red-400 mb-1">40.2%</span>
+            <div id="vbar-fill-early" class="w-full max-w-[68px] rounded-t-xl bg-gradient-to-t from-red-600 to-red-400 transition-all duration-500 shadow-sm" style="height: 40.2%"></div>
+            <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 mt-1.5 text-center">Early Heavy</span>
+          </div>
+
+          <div class="pop-tile flex flex-col items-center h-full justify-end pb-2 cursor-pointer">
+            <span id="vbar-label-even" class="text-xs sm:text-sm font-extrabold text-amber-600 dark:text-amber-400 mb-1">48.1%</span>
+            <div id="vbar-fill-even" class="w-full max-w-[68px] rounded-t-xl bg-gradient-to-t from-amber-600 to-amber-400 transition-all duration-500 shadow-sm" style="height: 48.1%"></div>
+            <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 mt-1.5 text-center">Even Split</span>
+          </div>
+
+          <div class="pop-tile flex flex-col items-center h-full justify-end pb-2 cursor-pointer">
+            <span id="vbar-label-rule" class="text-xs sm:text-sm font-extrabold text-sky-600 dark:text-sky-400 mb-1">67.3%</span>
+            <div id="vbar-fill-rule" class="w-full max-w-[68px] rounded-t-xl bg-gradient-to-t from-sky-600 to-sky-400 transition-all duration-500 shadow-sm" style="height: 67.3%"></div>
+            <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300 mt-1.5 text-center">Flowering Rule</span>
+          </div>
+
+          <div class="pop-tile flex flex-col items-center h-full justify-end pb-2 cursor-pointer">
+            <span id="vbar-label-optimal" class="text-xs sm:text-sm font-extrabold text-[#166534] dark:text-emerald-300 mb-1">75.6%</span>
+            <div id="vbar-fill-optimal" class="w-full max-w-[68px] rounded-t-xl bg-gradient-to-t from-[#14532d] to-emerald-400 transition-all duration-500 shadow-md" style="height: 75.6%"></div>
+            <span class="text-[11px] font-extrabold text-[#14532d] dark:text-emerald-300 mt-1.5 text-center">KharifShield ★</span>
+          </div>
+        </div>
+
+        <!-- Detailed Horizontal Bars -->
+        <div class="space-y-3">
+          <div class="pop-tile p-3.5 rounded-2xl bg-red-50/70 dark:bg-red-950/35 border border-red-200 dark:border-red-900">
+            <div class="flex items-center justify-between text-xs sm:text-sm font-extrabold mb-1.5">
+              <span class="text-red-900 dark:text-red-200" data-i18n="schedEarly">1. Early Heavy (50% / 35% / 15%)</span>
+              <span id="val-sched-early" class="text-red-700 dark:text-red-300">40.2% Yield Protected</span>
+            </div>
+            <div class="w-full h-3 rounded-full bg-red-200/80 dark:bg-red-900/60 overflow-hidden">
+              <div id="bar-sched-early" class="h-full bg-red-500 rounded-full transition-all duration-500" style="width: 40.2%"></div>
+            </div>
+          </div>
+
+          <div class="pop-tile p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/35 border border-amber-200 dark:border-amber-900">
+            <div class="flex items-center justify-between text-xs sm:text-sm font-extrabold mb-1.5">
+              <span class="text-amber-900 dark:text-amber-200" data-i18n="schedEven">2. Even Split (33% / 33% / 34%)</span>
+              <span id="val-sched-even" class="text-amber-700 dark:text-amber-300">48.1% Yield Protected</span>
+            </div>
+            <div class="w-full h-3 rounded-full bg-amber-200/80 dark:bg-amber-900/60 overflow-hidden">
+              <div id="bar-sched-even" class="h-full bg-amber-500 rounded-full transition-all duration-500" style="width: 48.1%"></div>
+            </div>
+          </div>
+
+          <div class="pop-tile p-3.5 rounded-2xl bg-sky-50/70 dark:bg-sky-950/35 border border-sky-200 dark:border-sky-900">
+            <div class="flex items-center justify-between text-xs sm:text-sm font-extrabold mb-1.5">
+              <span class="text-sky-900 dark:text-sky-200" data-i18n="schedRule">3. Flowering Rule (25% / 45% / 30%)</span>
+              <span id="val-sched-rule" class="text-sky-700 dark:text-sky-300">67.3% Yield Protected</span>
+            </div>
+            <div class="w-full h-3 rounded-full bg-sky-200/80 dark:bg-sky-900/60 overflow-hidden">
+              <div id="bar-sched-rule" class="h-full bg-sky-500 rounded-full transition-all duration-500" style="width: 67.3%"></div>
+            </div>
+          </div>
+
+          <div class="pop-tile p-3.5 rounded-2xl bg-forest-50/95 dark:bg-[#133a27] border-2 border-[#166534] dark:border-emerald-400">
+            <div class="flex items-center justify-between text-xs sm:text-sm font-extrabold mb-1.5">
+              <span class="text-[#14532d] dark:text-[#ecfdf5]" data-i18n="schedOptimal">4. KharifShield Optimal</span>
+              <span id="val-sched-optimal" class="text-[#166534] dark:text-emerald-300">75.6% Yield Protected</span>
+            </div>
+            <div class="w-full h-3 rounded-full bg-forest-200/80 dark:bg-emerald-950 overflow-hidden">
+              <div id="bar-sched-optimal" class="h-full bg-gradient-to-r from-[#14532d] to-emerald-400 rounded-full transition-all duration-500" style="width: 75.6%"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. INTERACTIVE CLICKABLE DEEP-DIVE EXPLANATION (WHY & HOW OUR SYSTEM WORKS) -->
+      <section class="pop-card bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border border-stone-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-[#166534] dark:text-emerald-400" data-i18n="deepDiveTag">Interactive System Architecture</span>
+            <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white" data-i18n="deepDiveHeading">
+              Why & How KharifShield Works — Click Any Section to Expand
+            </h3>
+          </div>
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400" data-i18n="deepDiveHint">Tap cards below to read full explanation</span>
+        </div>
+
+        <div class="space-y-3" id="judge-accordion-list">
+          <!-- Accordion Item 1 (Open by default) -->
+          <div class="judge-acc-item pop-tile rounded-2xl border border-forest-300 dark:border-emerald-600 bg-forest-50/60 dark:bg-[#133a27]/60 overflow-hidden">
+            <button type="button" class="judge-acc-btn w-full p-4 text-left flex items-center justify-between gap-3 cursor-pointer">
+              <span class="text-sm sm:text-base font-extrabold text-[#14532d] dark:text-[#ecfdf5]" data-i18n="acc1Title">
+                1. Why KharifShield Beats Generic Weather Apps & Static Advisories
+              </span>
+              <span class="judge-acc-icon text-sm font-extrabold text-[#166534] dark:text-emerald-300 shrink-0">▲</span>
+            </button>
+            <div class="judge-acc-body px-4 pb-4 text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed space-y-2 border-t border-forest-200/70 dark:border-emerald-800/70 pt-3">
+              <p data-i18n="acc1Para1">
+                Standard weather apps only show raw rainfall numbers (like "14 mm tomorrow"), leaving the farmer to guess whether to switch on the borewell. Conversely, static agricultural pamphlets assume unlimited groundwater and recommend fixed weekly watering.
+              </p>
+              <p data-i18n="acc1Para2">
+                KharifShield bridges that exact gap: it combines your real borewell reserve (25%–100%), your soil's water-holding capacity (Red, Mixed, or Black), your crop's exact growth stage, and live 3-day district rainfall to give one clear, actionable decision today—protecting up to 27% more harvest than splitting water evenly across the season.
+              </p>
+            </div>
+          </div>
+
+          <!-- Accordion Item 2 -->
+          <div class="judge-acc-item pop-tile rounded-2xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800/80 overflow-hidden">
+            <button type="button" class="judge-acc-btn w-full p-4 text-left flex items-center justify-between gap-3 cursor-pointer">
+              <span class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white" data-i18n="acc2Title">
+                2. How Our Stage-Priority Water Engine Works (FAO-56 / FAO-33)
+              </span>
+              <span class="judge-acc-icon text-sm font-extrabold text-slate-500 dark:text-slate-300 shrink-0">▼</span>
+            </button>
+            <div class="judge-acc-body hidden px-4 pb-4 text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed space-y-2 border-t border-stone-200 dark:border-slate-700 pt-3">
+              <p data-i18n="acc2Para1">
+                Maize does not need equal water every week. According to FAO Irrigation & Drainage Paper 33, water stress during Weeks 1–4 has a low yield penalty (Ky = 0.40), whereas stress during Weeks 5–10 (tasseling, silking, and cob formation) causes severe kernel abortion (Ky = 1.50).
+              </p>
+              <p data-i18n="acc2Para2">
+                Our optimizer intentionally holds back early water—encouraging deeper root growth—and reserves 55% to 65% of your scarce borewell water for Weeks 5–10, adjusting watering intervals automatically for fast-draining Red soil (5–6 days) versus moisture-retaining Black soil (9–11 days).
+              </p>
+            </div>
+          </div>
+
+          <!-- Accordion Item 3 -->
+          <div class="judge-acc-item pop-tile rounded-2xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800/80 overflow-hidden">
+            <button type="button" class="judge-acc-btn w-full p-4 text-left flex items-center justify-between gap-3 cursor-pointer">
+              <span class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white" data-i18n="acc3Title">
+                3. Why Zero-Hardware, Voice-First Design Wins for Small Telangana Farmers
+              </span>
+              <span class="judge-acc-icon text-sm font-extrabold text-slate-500 dark:text-slate-300 shrink-0">▼</span>
+            </button>
+            <div class="judge-acc-body hidden px-4 pb-4 text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed space-y-2 border-t border-stone-200 dark:border-slate-700 pt-3">
+              <p data-i18n="acc3Para1">
+                IoT soil probes cost ₹8,000–₹25,000 per acre, require batteries and field maintenance, and often get damaged during ploughing. Smallholder farmers in Telangana cannot afford sensor hardware.
+              </p>
+              <p data-i18n="acc3Para2">
+                KharifShield runs at ₹0 hardware cost in any mobile browser, works offline with district climate fallbacks when rural cellular data drops, maps local towns and suburbs (like Dammaiguda or Bachupally) to their district automatically, and reads every instruction aloud in calm, plain Telugu and English.
+              </p>
+            </div>
+          </div>
+
+          <!-- Accordion Item 4 -->
+          <div class="judge-acc-item pop-tile rounded-2xl border border-stone-200 dark:border-slate-700 bg-stone-50 dark:bg-slate-800/80 overflow-hidden">
+            <button type="button" class="judge-acc-btn w-full p-4 text-left flex items-center justify-between gap-3 cursor-pointer">
+              <span class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white" data-i18n="acc4Title">
+                4. Live Rainfall Override & Root Waterlogging Protection
+              </span>
+              <span class="judge-acc-icon text-sm font-extrabold text-slate-500 dark:text-slate-300 shrink-0">▼</span>
+            </button>
+            <div class="judge-acc-body hidden px-4 pb-4 text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed space-y-2 border-t border-stone-200 dark:border-slate-700 pt-3">
+              <p data-i18n="acc4Para1">
+                Every time you check your plan, KharifShield queries live 3-day district precipitation from Open-Meteo. If ≥12 mm of useful rain is expected, it pauses pumping to save a full borewell cycle.
+              </p>
+              <p data-i18n="acc4Para2">
+                If a heavy rainstorm or cyclone (>30 mm) approaches, an immediate red alert overrides the schedule, instructing the farmer to keep pumps off and clear field drainage channels because standing water for over 24 hours suffocates maize roots.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. FUTURE EXPANSION ROADMAP: WHATSAPP, SMS & TOLL-FREE VOICE AI -->
+      <section class="pop-card bg-gradient-to-br from-forest-50 via-white to-harvest-50 dark:from-[#133a27] dark:via-slate-900 dark:to-slate-900 rounded-3xl p-5 sm:p-7 border-2 border-forest-300 dark:border-emerald-600 shadow-sm space-y-5">
+        <div>
+          <span class="text-xs font-extrabold uppercase tracking-wider text-[#d97706] dark:text-amber-300" data-i18n="roadmapTag">Phase-2 Omni-Channel Farmer Reach</span>
+          <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-0.5" data-i18n="roadmapHeading">
+            Future Expansion: WhatsApp, SMS & Dial-In AI Voice Line
+          </h3>
+          <p class="text-xs sm:text-sm text-slate-700 dark:text-slate-200 mt-1 leading-relaxed" data-i18n="roadmapSub">
+            To reach every farmer across Telangana—including elders with basic keypad phones and low literacy—our modular water engine is built to plug directly into three familiar channels:
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Channel 1: WhatsApp Integration -->
+          <div class="pop-tile p-4 rounded-2xl bg-white/95 dark:bg-slate-800/95 border border-emerald-200 dark:border-emerald-700 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">💬</span>
+              <h4 class="text-sm sm:text-base font-extrabold text-[#14532d] dark:text-emerald-300" data-i18n="roadWaTitle">
+                1. Automated WhatsApp Alerts & Voice Notes
+              </h4>
+            </div>
+            <p class="text-xs text-slate-700 dark:text-slate-200 leading-relaxed" data-i18n="roadWaDesc">
+              Farmers register once by sending their village name and sowing date on WhatsApp. Every morning at 6:30 AM, KharifShield sends a personalized Telugu/English message plus a 15-second voice note telling them whether to water today or wait for rain—no app installation needed.
+            </p>
+          </div>
+
+          <!-- Channel 2: SMS Sending -->
+          <div class="pop-tile p-4 rounded-2xl bg-white/95 dark:bg-slate-800/95 border border-sky-200 dark:border-sky-700 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">📩</span>
+              <h4 class="text-sm sm:text-base font-extrabold text-sky-800 dark:text-sky-300" data-i18n="roadSmsTitle">
+                2. Offline 2G / Feature-Phone SMS Alerts
+              </h4>
+            </div>
+            <p class="text-xs text-slate-700 dark:text-slate-200 leading-relaxed" data-i18n="roadSmsDesc">
+              In remote villages with zero mobile internet, automated SMS gateway alerts deliver concise Telugu/English watering decisions and urgent heavy-rain cyclone warnings directly to basic keypad phones before farmers walk to their borewell starters.
+            </p>
+          </div>
+
+          <!-- Channel 3: Toll-Free Dial-In AI Voice Line -->
+          <div class="pop-tile p-4 rounded-2xl bg-white/95 dark:bg-slate-800/95 border border-amber-300 dark:border-amber-600 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">📞</span>
+              <h4 class="text-sm sm:text-base font-extrabold text-harvest-800 dark:text-amber-300" data-i18n="roadCallTitle">
+                3. Toll-Free Number to Talk Directly to AI
+              </h4>
+            </div>
+            <p class="text-xs text-slate-700 dark:text-slate-200 leading-relaxed" data-i18n="roadCallDesc">
+              Farmers who cannot read or type can simply dial a free toll-free helpline number from any phone and speak naturally in Telugu ("మా పొలంలో కంకి దశ నడుస్తోంది, ఈరోజు నీరు పెట్టాలా?"). Our conversational voice AI checks their district weather and answers live on the call.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Heavy Rain / Cyclone Simulator + Honest Scientific Limits -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section class="pop-card bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-stone-200 dark:border-slate-800 shadow-sm flex flex-col justify-between gap-4">
+          <div>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-red-600 dark:text-red-400" data-i18n="cycloneSimTag">Extreme Rain Override Test</span>
+            <h3 class="text-lg font-extrabold text-slate-900 dark:text-white mt-1" data-i18n="cycloneSimTitle">
+              Test Heavy Rain / Cyclone Alert (68 mm)
+            </h3>
+            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-2 leading-relaxed" data-i18n="cycloneSimDesc">
+              Simulate a 68 mm cyclone forecast to verify how KharifShield triggers an immediate red Pause Pumping alert across both tabs.
+            </p>
+          </div>
+          <button id="judge-cyclone-toggle-btn" type="button" class="pop-btn w-full py-3.5 px-4 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer">
+            <span>⛈️</span>
+            <span id="judge-cyclone-btn-text" data-i18n="activateCycloneBtn">Test Heavy Rain / Cyclone Alert (68 mm)</span>
+          </button>
+        </section>
+
+        <section class="pop-card bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-stone-200 dark:border-slate-800 shadow-sm space-y-2.5">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-[#166534] dark:text-emerald-400" data-i18n="scienceTag">Methodology & Honest Scope</span>
+          <h3 class="text-lg font-extrabold text-slate-900 dark:text-white" data-i18n="scienceTitle">
+            Scientific Foundation & Honest Limits
+          </h3>
+          <ul class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 space-y-1.5 list-disc pl-4 leading-relaxed">
+            <li data-i18n="sciPoint1">FAO-56 / FAO-33 Water Model: Prioritizes Cob-Forming weeks (Ky = 1.50) over early growth (Ky = 0.40) and ripening (Ky = 0.50).</li>
+            <li data-i18n="sciPoint2">Open-Meteo Live Weather: Fetches 3-day district precipitation with automatic offline climatology backup.</li>
+            <li data-i18n="sciPoint3">Honest Limits: Uses 3 soil presets (Red/Mixed/Black) and district-level yield baselines rather than plot lab assays.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER WITH OPTIONAL GEMINI API KEY MODAL BUTTON -->
+  <footer class="border-t border-stone-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 py-5 px-4 text-xs text-slate-500 dark:text-slate-400">
+    <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p data-i18n="footerNote">KharifShield • Zero-Hardware Water Planner for Telangana Maize Farmers</p>
+      <button id="open-gemini-modal-btn" type="button" class="pop-btn px-3.5 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-stone-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-bold cursor-pointer">
+        🔑 <span data-i18n="geminiKeyFooterBtn">Gemini API Key</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- ======================================================================= -->
+  <!-- FLOATING AUDIO PLAYER PILL (BOTTOM-CENTER COMPACT, z-index: 10050)      -->
+  <!-- ======================================================================= -->
+  <div id="floating-audio-pill" style="z-index: 10050;" class="hidden fixed bottom-2.5 left-1/2 -translate-x-1/2 max-w-[calc(100vw-24px)] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-900/95 dark:bg-[#133a27] text-white shadow-2xl border border-emerald-400/80 backdrop-blur-md">
+    <span class="text-xs sm:text-sm animate-pulse shrink-0">🔊</span>
+    <span id="audio-pill-title" class="text-[11px] font-extrabold max-w-[115px] sm:max-w-[160px] truncate text-[#ecfdf5]">Reading Aloud...</span>
+    <button id="audio-pill-pause-btn" type="button" class="pop-btn px-2 py-0.5 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[10px] sm:text-[11px] shrink-0 cursor-pointer">
+      Pause
+    </button>
+    <button id="audio-pill-stop-btn" type="button" class="pop-btn px-2 py-0.5 rounded-full bg-[#dc2626] hover:bg-red-500 text-white font-extrabold text-[10px] sm:text-[11px] flex items-center justify-center shrink-0 cursor-pointer" aria-label="Stop Audio">
+      Stop ✕
+    </button>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- INTERACTIVE GUIDE ME TOUR CARD (STEP 1 -> STEP 2 -> AI CHATBOT)         -->
+  <!-- ======================================================================= -->
+  <div id="guide-tour-card" style="z-index: 9500;" class="hidden fixed bottom-3 left-1/2 -translate-x-1/2 w-[calc(100vw-24px)] max-w-sm rounded-2xl bg-slate-900/95 text-white p-3 sm:p-4 shadow-2xl border-2 border-[#d97706] backdrop-blur-md transition-all duration-200">
+    <div id="tour-header-row" class="flex items-center justify-between gap-2 mb-1.5">
+      <div class="flex items-center gap-2 min-w-0">
+        <span id="tour-step-counter" class="text-[11px] font-extrabold uppercase tracking-wider text-amber-300 shrink-0">Step 1 / 2</span>
+        <span id="tour-minimized-title" class="hidden text-xs font-extrabold text-white truncate">Step 1: Fill your farm details</span>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button id="tour-minimize-btn" type="button" class="pop-btn text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-amber-200 cursor-pointer">
+          Minimize —
+        </button>
+        <button id="tour-exit-btn" type="button" class="pop-btn text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-[#dc2626] hover:bg-red-500 text-white cursor-pointer" data-i18n="tourExitBtn">
+          Exit ✕
+        </button>
+      </div>
+    </div>
+    <div id="tour-body-wrapper">
+      <h4 id="tour-card-title" class="text-sm sm:text-base font-extrabold text-white mb-0.5">Step 1: Fill your farm details</h4>
+      <p id="tour-card-body" class="text-xs text-slate-200 leading-relaxed mb-2.5">
+        Select your district, crop age, soil type, and borewell water %, then tap Check My Water Plan.
+      </p>
+      <div class="flex items-center justify-end">
+        <button id="tour-continue-btn" type="button" class="pop-btn px-3.5 py-1.5 rounded-xl bg-[#d97706] hover:bg-amber-500 text-white font-extrabold text-xs shrink-0 cursor-pointer" data-i18n="tourContinueBtn">
+          Continue →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- DETAILED REPORT MODAL (z-index: 9000 + BRIGHT RED CLOSE BUTTON)         -->
+  <!-- ======================================================================= -->
+  <div id="detailed-report-modal" style="z-index: 9000;" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full max-h-[88vh] overflow-y-auto p-5 sm:p-7 border border-stone-200 dark:border-slate-700 shadow-2xl space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-stone-200 dark:border-slate-800">
+        <div>
+          <span class="text-xs font-extrabold uppercase tracking-wider text-[#166534] dark:text-emerald-400" data-i18n="reportModalTag">Plain-Language 6-Part Guide</span>
+          <h3 class="text-xl font-extrabold text-slate-900 dark:text-white" data-i18n="reportModalHeading">Detailed Maize Water & Rain Report</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="read-detailed-report-btn" type="button" class="pop-btn px-3.5 py-2 rounded-xl bg-forest-100 hover:bg-forest-200 dark:bg-[#133a27] dark:hover:bg-[#184730] border border-transparent dark:border-emerald-400 text-[#14532d] dark:text-[#ecfdf5] font-extrabold text-xs flex items-center gap-1.5 cursor-pointer">
+            <span>🔊</span>
+            <span data-i18n="readDetailedBtn">Read Detailed Report Aloud</span>
+          </button>
+          <button id="close-detailed-report-btn" type="button" class="pop-btn px-3.5 py-2 rounded-xl bg-[#dc2626] hover:bg-red-500 text-white font-extrabold text-xs shadow-sm cursor-pointer" data-i18n="closeBtn">
+            Close ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- 6 Hover-Animated Plain-Language Cards -->
+      <div id="detailed-report-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- GEMINI API KEY MODAL (OPTIONAL)                                         -->
+  <!-- ======================================================================= -->
+  <div id="gemini-key-modal" style="z-index: 9200;" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 border border-stone-200 dark:border-slate-700 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-extrabold text-slate-900 dark:text-white" data-i18n="geminiModalHeading">Gemini API Key (Optional)</h3>
+        <button id="close-gemini-modal-btn" type="button" class="w-8 h-8 rounded-xl bg-[#dc2626] hover:bg-red-500 text-white font-extrabold cursor-pointer">✕</button>
+      </div>
+      <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed" data-i18n="geminiModalDesc">
+        KharifShield includes a complete offline smart helper. Optionally paste your Google Gemini API key (stored locally in your browser) to enable live cloud replies.
+      </p>
+      <input id="gemini-api-input" type="password" class="w-full rounded-2xl border border-stone-300 dark:border-slate-600 bg-stone-50 dark:bg-slate-800 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white" placeholder="AIzaSy..." />
+      <div id="gemini-save-status" class="hidden text-xs font-extrabold text-[#166534] dark:text-emerald-400"></div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button id="clear-gemini-key-btn" type="button" class="pop-btn px-3.5 py-2 rounded-xl bg-stone-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-bold cursor-pointer" data-i18n="clearBtn">Clear</button>
+        <button id="save-gemini-key-btn" type="button" class="pop-btn px-4 py-2 rounded-xl bg-[#166534] dark:bg-emerald-700 text-white text-xs font-extrabold cursor-pointer" data-i18n="saveBtn">Save Key</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. ALL 33 TELANGANA DISTRICTS
+      // =========================================================================
+      const DISTRICTS = [
+        { id: 'adilabad', en: 'Adilabad', te: 'ఆదిలాబాద్', major: true, lat: 19.664, lon: 78.532, rain: 980, yLow: 5.2, yHigh: 6.7, zoneEn: 'Northern Telangana Zone', zoneTe: 'ఉత్తర తెలంగాణ మండలం' },
+        { id: 'bhadradri', en: 'Bhadradri Kothagudem', te: 'భద్రాద్రి కొత్తగూడెం', major: true, lat: 17.554, lon: 80.619, rain: 1020, yLow: 5.4, yHigh: 6.9, zoneEn: 'Eastern Godavari Basin', zoneTe: 'తూర్పు గోదావరి ప్రాంతం' },
+        { id: 'hanumakonda', en: 'Hanumakonda', te: 'హనుమకొండ', major: true, lat: 18.000, lon: 79.558, rain: 810, yLow: 5.7, yHigh: 7.3, zoneEn: 'Central Telangana Zone', zoneTe: 'మధ్య తెలంగాణ మండలం' },
+        { id: 'hyderabad', en: 'Hyderabad', te: 'హైదరాబాద్', major: false, urban: true, lat: 17.385, lon: 78.486, rain: 740, yLow: 4.6, yHigh: 5.9, zoneEn: 'Urban Peri-Central Zone', zoneTe: 'హైదరాబాద్ పట్టణ ప్రాంతం' },
+        { id: 'jagtial', en: 'Jagtial', te: 'జగిత్యాల', major: true, lat: 18.789, lon: 78.912, rain: 860, yLow: 5.9, yHigh: 7.5, zoneEn: 'SRSP Command Maize Belt', zoneTe: 'ఎస్సారెస్పీ మొక్కజొన్న బెల్ట్' },
+        { id: 'jangaon', en: 'Jangaon', te: 'జనగామ', major: false, lat: 17.726, lon: 79.152, rain: 730, yLow: 5.0, yHigh: 6.4, zoneEn: 'Central Semi-Arid Zone', zoneTe: 'మధ్య తెలంగాణ ప్రాంతం' },
+        { id: 'jayashankar', en: 'Jayashankar Bhupalpally', te: 'జయశంకర్ భూపాలపల్లి', major: false, lat: 18.435, lon: 79.864, rain: 950, yLow: 5.1, yHigh: 6.5, zoneEn: 'Godavari Valley Zone', zoneTe: 'గోదావరి లోయ ప్రాంతం' },
+        { id: 'jogulamba', en: 'Jogulamba Gadwal', te: 'జోగులాంబ గద్వాల', major: false, lat: 16.233, lon: 77.800, rain: 580, yLow: 4.8, yHigh: 6.1, zoneEn: 'Southern Telangana Zone', zoneTe: 'దక్షిణ తెలంగాణ మండలం' },
+        { id: 'kamareddy', en: 'Kamareddy', te: 'కామారెడ్డి', major: true, lat: 18.320, lon: 78.340, rain: 870, yLow: 5.8, yHigh: 7.4, zoneEn: 'Northern Maize Corridor', zoneTe: 'కామారెడ్డి మొక్కజొన్న బెల్ట్' },
+        { id: 'karimnagar', en: 'Karimnagar', te: 'కరీంనగర్', major: true, lat: 18.438, lon: 79.128, rain: 820, yLow: 6.0, yHigh: 7.6, zoneEn: 'Prime Telangana Maize Hub', zoneTe: 'ప్రధాన మొక్కజొన్న కేంద్రం' },
+        { id: 'khammam', en: 'Khammam', te: 'ఖమ్మం', major: true, lat: 17.247, lon: 80.151, rain: 920, yLow: 5.9, yHigh: 7.5, zoneEn: 'NSP & Munneru Maize Belt', zoneTe: 'ఖమ్మం మొక్కజొన్న బెల్ట్' },
+        { id: 'komaram', en: 'Komaram Bheem Asifabad', te: 'కొమరం భీమ్ ఆసిఫాబాద్', major: false, lat: 19.358, lon: 79.285, rain: 990, yLow: 4.9, yHigh: 6.2, zoneEn: 'Northern Forest Fringe', zoneTe: 'ఉత్తర అటవీ ప్రాంతం' },
+        { id: 'mahbubabad', en: 'Mahbubabad', te: 'మహబూబాబాద్', major: true, lat: 17.602, lon: 80.002, rain: 880, yLow: 5.6, yHigh: 7.2, zoneEn: 'Eastern Maize Cluster', zoneTe: 'తూర్పు మొక్కజొన్న క్లస్టర్' },
+        { id: 'mahabubnagar', en: 'Mahabubnagar', te: 'మహబూబ్‌నగర్', major: false, lat: 16.748, lon: 78.003, rain: 620, yLow: 4.9, yHigh: 6.3, zoneEn: 'Southern Telangana Zone', zoneTe: 'దక్షిణ తెలంగాణ మండలం' },
+        { id: 'mancherial', en: 'Mancherial', te: 'మంచిర్యాల', major: true, lat: 18.871, lon: 79.444, rain: 940, yLow: 5.3, yHigh: 6.8, zoneEn: 'North-East Godavari Belt', zoneTe: 'ఈశాన్య గోదావరి ప్రాంతం' },
+        { id: 'medak', en: 'Medak', te: 'మెదక్', major: true, lat: 18.045, lon: 78.260, rain: 790, yLow: 5.6, yHigh: 7.1, zoneEn: 'Manjira Basin Maize Belt', zoneTe: 'మంజీరా మొక్కజొన్న బెల్ట్' },
+        { id: 'medchal', en: 'Medchal-Malkajgiri', te: 'మేడ్చల్-మల్కాజిగిరి', major: false, urban: true, lat: 17.629, lon: 78.481, rain: 745, yLow: 4.8, yHigh: 6.1, zoneEn: 'North Hyderabad Peri-Urban', zoneTe: 'మేడ్చల్ పరిసర ప్రాంతం' },
+        { id: 'mulugu', en: 'Mulugu', te: 'ములుగు', major: false, lat: 18.192, lon: 79.943, rain: 980, yLow: 5.1, yHigh: 6.5, zoneEn: 'Eastern Tribal Zone', zoneTe: 'తూర్పు గిరిజన ప్రాంతం' },
+        { id: 'nagarkurnool', en: 'Nagarkurnool', te: 'నాగర్‌కర్నూల్', major: false, lat: 16.483, lon: 78.325, rain: 640, yLow: 5.2, yHigh: 6.6, zoneEn: 'Southern Telangana Zone', zoneTe: 'దక్షిణ తెలంగాణ మండలం' },
+        { id: 'nalgonda', en: 'Nalgonda', te: 'నల్గొండ', major: false, lat: 17.057, lon: 79.267, rain: 650, yLow: 5.0, yHigh: 6.4, zoneEn: 'Central-South Semi-Arid', zoneTe: 'నల్గొండ ప్రాంతం' },
+        { id: 'narayanpet', en: 'Narayanpet', te: 'నారాయణపేట', major: false, lat: 16.745, lon: 77.496, rain: 600, yLow: 4.7, yHigh: 6.0, zoneEn: 'Western Krishna Border', zoneTe: 'పశ్చిమ కృష్ణా సరిహద్దు' },
+        { id: 'nirmal', en: 'Nirmal', te: 'నిర్మల్', major: true, lat: 19.096, lon: 78.343, rain: 930, yLow: 5.8, yHigh: 7.4, zoneEn: 'Kaddam & Godavari Maize Belt', zoneTe: 'నిర్మల్ మొక్కజొన్న బెల్ట్' },
+        { id: 'nizamabad', en: 'Nizamabad', te: 'నిజామాబాద్', major: true, lat: 18.672, lon: 78.094, rain: 910, yLow: 6.1, yHigh: 7.8, zoneEn: 'Top Telangana Maize Hub', zoneTe: 'అగ్రగామి మొక్కజొన్న కేంద్రం' },
+        { id: 'peddapalli', en: 'Peddapalli', te: 'పెద్దపల్లి', major: true, lat: 18.615, lon: 79.374, rain: 865, yLow: 5.7, yHigh: 7.2, zoneEn: 'SRSP Stage-1 Maize Belt', zoneTe: 'పెద్దపల్లి మొక్కజొన్న బెల్ట్' },
+        { id: 'rajanna', en: 'Rajanna Sircilla', te: 'రాజన్న సిరిసిల్ల', major: true, lat: 18.389, lon: 78.802, rain: 795, yLow: 5.5, yHigh: 7.0, zoneEn: 'Mid-Manair Maize Zone', zoneTe: 'మిడ్ మానేరు ప్రాంతం' },
+        { id: 'rangareddy', en: 'Rangareddy', te: 'రంగారెడ్డి', major: false, lat: 17.320, lon: 78.380, rain: 720, yLow: 5.3, yHigh: 6.8, zoneEn: 'South-West Peri-Urban Zone', zoneTe: 'రంగారెడ్డి ప్రాంతం' },
+        { id: 'sangareddy', en: 'Sangareddy', te: 'సంగారెడ్డి', major: true, lat: 17.614, lon: 78.081, rain: 760, yLow: 5.6, yHigh: 7.1, zoneEn: 'Zaheerabad-Sangareddy Belt', zoneTe: 'సంగారెడ్డి మొక్కజొన్న బెల్ట్' },
+        { id: 'siddipet', en: 'Siddipet', te: 'సిద్దిపేట', major: true, lat: 18.101, lon: 78.852, rain: 775, yLow: 5.8, yHigh: 7.4, zoneEn: 'Central Telangana Maize Hub', zoneTe: 'సిద్దిపేట మొక్కజొన్న కేంద్రం' },
+        { id: 'suryapet', en: 'Suryapet', te: 'సూర్యాపేట', major: false, lat: 17.141, lon: 79.623, rain: 710, yLow: 5.1, yHigh: 6.5, zoneEn: 'Musi-Krishna Basin', zoneTe: 'మూసీ-కృష్ణా ప్రాంతం' },
+        { id: 'vikarabad', en: 'Vikarabad', te: 'వికారాబాద్', major: false, lat: 17.338, lon: 77.904, rain: 765, yLow: 5.3, yHigh: 6.7, zoneEn: 'Ananthagiri Plateau Zone', zoneTe: 'వికారాబాద్ ప్రాంతం' },
+        { id: 'wanaparthy', en: 'Wanaparthy', te: 'వనపర్తి', major: false, lat: 16.361, lon: 78.062, rain: 615, yLow: 4.9, yHigh: 6.2, zoneEn: 'Southern Tank-Fed Zone', zoneTe: 'దక్షిణ చెరువుల ఆయకట్టు' },
+        { id: 'warangal', en: 'Warangal', te: 'వరంగల్', major: true, lat: 17.968, lon: 79.594, rain: 830, yLow: 5.8, yHigh: 7.4, zoneEn: 'Central Telangana Zone', zoneTe: 'మధ్య తెలంగాణ మండలం' },
+        { id: 'yadadri', en: 'Yadadri Bhuvanagiri', te: 'యాదాద్రి భువనగిరి', major: false, lat: 17.512, lon: 78.888, rain: 705, yLow: 5.0, yHigh: 6.4, zoneEn: 'Central-East Dry Zone', zoneTe: 'యాదాద్రి పరిసర ప్రాంతం' }
+      ];
+
+      // Fuzzy, Phonetic & Bilingual Town/Suburb -> District ID Map
+      const LOCATION_ALIASES = {
+        'dammaiguda': 'medchal',
+        'damaiguda': 'medchal',
+        'damai guda': 'medchal',
+        'dammai guda': 'medchal',
+        'dami kuda': 'medchal',
+        'damikuda': 'medchal',
+        'dami guda': 'medchal',
+        'tami kuda': 'medchal',
+        'tamikuda': 'medchal',
+        'tami guda': 'medchal',
+        'tamiguda': 'medchal',
+        'thami kuda': 'medchal',
+        'thamikuda': 'medchal',
+        'thami guda': 'medchal',
+        'thamiguda': 'medchal',
+        'dhammi guda': 'medchal',
+        'dhammiguda': 'medchal',
+        'దమ్మాయిగూడ': 'medchal',
+        'దమాయిగూడ': 'medchal',
+        'తమి కూడా': 'medchal',
+        'తమిగూడ': 'medchal',
+        'దమి కూడా': 'medchal',
+        'bachupally': 'medchal',
+        'bachupalli': 'medchal',
+        'bachu pally': 'medchal',
+        'bachu palli': 'medchal',
+        'బాచుపల్లి': 'medchal',
+        'miyapur': 'medchal',
+        'miya pur': 'medchal',
+        'మియాపూర్': 'medchal',
+        'nizampet': 'medchal',
+        'nizam pet': 'medchal',
+        'నిజాంపేట్': 'medchal',
+        'kukatpally': 'medchal',
+        'kukatpalli': 'medchal',
+        'kukat pally': 'medchal',
+        'కూకట్పల్లి': 'medchal',
+        'కూకట్‌పల్లి': 'medchal',
+        'kompally': 'medchal',
+        'kompalli': 'medchal',
+        'kom pally': 'medchal',
+        'కొంపల్లి': 'medchal',
+        'medchal': 'medchal',
+        'malkajgiri': 'medchal',
+        'malkaj giri': 'medchal',
+        'మేడ్చల్': 'medchal',
+        'warrangal': 'warangal',
+        'warangal': 'warangal',
+        'varangal': 'warangal',
+        'వరంగల్': 'warangal',
+        'hanamkonda': 'hanumakonda',
+        'hanumakonda': 'hanumakonda',
+        'kazipet': 'hanumakonda',
+        'హనుమకొండ': 'hanumakonda',
+        'కాజీపేట': 'hanumakonda',
+        'hyderabad': 'hyderabad',
+        'secunderabad': 'hyderabad',
+        'uppal': 'hyderabad',
+        'gachibowli': 'hyderabad',
+        'హైదరాబాద్': 'hyderabad',
+        'సికింద్రాబాద్': 'hyderabad',
+        'ఉప్పల్': 'hyderabad',
+        'గచ్చిబౌలి': 'hyderabad',
+        'shamshabad': 'rangareddy',
+        'శంషాబాద్': 'rangareddy',
+        'patancheru': 'sangareddy',
+        'పటాన్చెరు': 'sangareddy',
+        'zaheerabad': 'sangareddy',
+        'జహీరాబాద్': 'sangareddy',
+        'gajwel': 'siddipet',
+        'గజ్వేల్': 'siddipet',
+        'huzurabad': 'karimnagar',
+        'హుజూరాబాద్': 'karimnagar',
+        'korutla': 'jagtial',
+        'కోరుట్ల': 'jagtial',
+        'armoor': 'nizamabad',
+        'ఆర్మూర్': 'nizamabad',
+        'bodhan': 'nizamabad',
+        'బోధన్': 'nizamabad',
+        'banswada': 'kamareddy',
+        'బాన్సువాడ': 'kamareddy',
+        'mahabubabad': 'mahbubabad',
+        'mahbubabad': 'mahbubabad',
+        'మహబూబాబాద్': 'mahbubabad',
+        'kothagudem': 'bhadradri',
+        'కొత్తగూడెం': 'bhadradri',
+        'sircilla': 'rajanna',
+        'సిరిసిల్ల': 'rajanna',
+        'bhuvanagiri': 'yadadri',
+        'భువనగిరి': 'yadadri',
+        'gadwal': 'jogulamba',
+        'గద్వాల': 'jogulamba',
+        'asifabad': 'komaram',
+        'ఆసిఫాబాద్': 'komaram'
+      };
+
+      const OUTSIDE_CITIES = [
+        'delhi', 'new delhi', 'ఢిల్లీ', 'mumbai', 'ముంబై', 'bangalore', 'bengaluru', 'బెంగళూరు',
+        'chennai', 'చెన్నై', 'vijayawada', 'విజయవాడ', 'guntur', 'గుంటూరు', 'visakhapatnam', 'vizag',
+        'tirupati', 'తిరుపతి', 'kurnool', 'కర్నూలు', 'pune', 'kolkata', 'jaipur', 'lucknow'
+      ];
+
+      // =========================================================================
+      // 2. BILINGUAL UI TRANSLATIONS (ENGLISH & TELUGU — PLAIN LANGUAGE)
+      // =========================================================================
+      const TRANSLATIONS = {
+        en: {
+          brandSub: 'Telangana Maize Planner',
+          guideMeBtn: 'Guide Me',
+          darkModeBtn: 'Dark Mode',
+          lightModeBtn: 'Light Mode',
+          cycloneTitle: 'HEAVY RAIN / CYCLONE ALERT: PAUSE PUMPING IMMEDIATELY!',
+          cycloneDesc: 'Heavy rainfall (>30 mm) forecast in the next 3 days. Keep borewell switched off and clear field water drains.',
+          turnOffCycloneBtn: 'Turn Off Simulator',
+          tabFarmer: '🌾 Farmer App',
+          tabJudges: '⚖️ How It Works (Judges)',
+          heroBadge: 'Zero Sensors • Zero Hardware • 33 Telangana Districts',
+          heroHeadline: 'Smart Water Timing for Kharif Maize — Zero Sensors, Zero Hardware',
+          heroSubtext: 'Protect your harvest during critical Cob-Forming weeks using live 3-day rain forecasts, local soil type, and your borewell water reserve.',
+          heroSideTag: 'Peak Maize Priority',
+          heroSideVal: 'Weeks 5–10 (Cob-Forming)',
+          step1Badge: 'Step 1 of 2',
+          step1Heading: 'Your Farm Details',
+          activeStepPill: '● Active Now',
+          planReadyTag: '✓ Water Plan Ready',
+          speakDetailsBtn: 'Speak Details',
+          sandboxMicHint: 'Preview sandbox blocked live mic access — type or tap a spoken phrase below to test the parser (works with live mic when opened directly in Chrome):',
+          outsideTitle: 'Outside Telangana Location Spoken',
+          outsideDesc: 'KharifShield is built for Telangana’s 33 districts. Using nearest Telangana baseline (Hyderabad / Rangareddy).',
+          labelDistrict: '1. District (Telangana)',
+          labelCropAge: '2. Crop Age',
+          ageOptYoung: '1. Young Plants (Weeks 1–4)',
+          ageOptTassel: '2. Cob-Forming Stage ★ (Weeks 5–10)',
+          ageOptCobFill: '3. Grain Filling (Weeks 11+)',
+          ageHelperSub: 'Voice supports "20 days", "6 weeks", "2 months", or "5 to 10 weeks".',
+          labelSoilType: '3. Soil Type',
+          soilRedTitle: 'Red Soil',
+          soilRedDesc: 'Drains fast, needs lighter frequent watering',
+          soilMixedTitle: 'Mixed Soil',
+          soilMixedDesc: 'Balanced soil moisture holding',
+          soilBlackTitle: 'Black Soil',
+          soilBlackDesc: 'Holds water nearly twice as long',
+          labelWaterLeft: '4. Borewell Water Left',
+          tank25Title: '25% Low',
+          tank25Sub: 'About 1 watering left',
+          tank50Title: '50% Half',
+          tank50Sub: 'About 2 waterings left',
+          tank75Title: '75% Good',
+          tank75Sub: 'About 3 waterings left',
+          tank100Title: '100% Full',
+          tank100Sub: 'About 4 waterings left',
+          checkPlanBtn: 'Check My Water Plan',
+          checkingPlanBtn: 'Checking Rain & Water Plan...',
+          step2Badge: 'Step 2 of 2',
+          step2Heading: 'Your Water Plan Summary',
+          readSummaryBtn: 'Read Summary Aloud',
+          detailedReportBtn: 'View Detailed Report',
+          actionBannerTag: "Today's Clear Action",
+          whatToDoLabel: 'What to Do Today',
+          whyProtectsLabel: 'Why This Protects Your Crop',
+          metricRainTitle: '3-Day Rain Forecast',
+          metricHarvestTitle: 'Harvest Protected (%)',
+          metricPriorityTitle: 'Best Stage Priority',
+          metricPriorityStage: 'Weeks 5–10 (Cob-Forming)',
+          metricPrioritySub: 'Highest harvest sensitivity window',
+          stageSplitTitle: '3-Stage Water Plan Breakdown',
+          stage1CardTitle: '1. Weeks 1–4 (Small Plants)',
+          stage2CardTitle: '2. Weeks 5–10 ★ (Cob-Forming)',
+          stage3CardTitle: '3. Weeks 11+ (Ripening)',
+          step3Badge: 'Farm & Crop Helper',
+          step3Heading: 'For any other help, you can ask KharifShield AI',
+          aiOfflineTag: 'Smart Maize Helper Ready',
+          aiLiveTag: 'Gemini Live AI Active',
+          chipSoilCheck: 'How do I check soil moisture by hand?',
+          chipBestTime: 'What is the best time of day to pump?',
+          chipFertilizer: 'When should I apply fertilizer with water?',
+          chipRain: 'What if heavy rain floods my field?',
+          chatInputPlaceholder: 'Ask about your farm, soil, rain, or borewell timing...',
+          chatSendBtn: 'Send',
+          judgeLiveSyncTag: 'Synced with Farmer App',
+          judgeBenchTag: 'Historical District Yield Reference',
+          judgeYieldRangeLabel: 'District Yield Range (90% PI)',
+          judgeRainNormalLabel: 'Seasonal Kharif Rainfall',
+          judgeScaleNoteLabel: 'Benchmark Scope',
+          judgeScaleNoteTitle: 'District-Level Baseline',
+          judgeScaleNoteDesc: 'Reference baseline only — not a guaranteed plot-level yield promise.',
+          chartTag: 'FAO-33 Relative Yield Retention',
+          chartHeading: 'Irrigation Schedule Yield Comparison',
+          schedEarly: '1. Early Heavy (50% / 35% / 15%)',
+          schedEven: '2. Even Split (33% / 33% / 34%)',
+          schedRule: '3. Flowering Rule (25% / 45% / 30%)',
+          schedOptimal: '4. KharifShield Optimal',
+          deepDiveTag: 'Interactive System Architecture',
+          deepDiveHeading: 'Why & How KharifShield Works — Click Any Section to Expand',
+          deepDiveHint: 'Tap cards below to read full explanation',
+          acc1Title: '1. Why KharifShield Beats Generic Weather Apps & Static Advisories',
+          acc1Para1: 'Standard weather apps only show raw rainfall numbers (like "14 mm tomorrow"), leaving the farmer to guess whether to switch on the borewell. Conversely, static agricultural pamphlets assume unlimited groundwater and recommend fixed weekly watering.',
+          acc1Para2: 'KharifShield bridges that exact gap: it combines your real borewell reserve (25%–100%), your soil\'s water-holding capacity (Red, Mixed, or Black), your crop\'s exact growth stage, and live 3-day district rainfall to give one clear, actionable decision today—protecting up to 27% more harvest than splitting water evenly across the season.',
+          acc2Title: '2. How Our Stage-Priority Water Engine Works (FAO-56 / FAO-33)',
+          acc2Para1: 'Maize does not need equal water every week. According to FAO Irrigation & Drainage Paper 33, water stress during Weeks 1–4 has a low yield penalty (Ky = 0.40), whereas stress during Weeks 5–10 (tasseling, silking, and cob formation) causes severe kernel abortion (Ky = 1.50).',
+          acc2Para2: 'Our optimizer intentionally holds back early water—encouraging deeper root growth—and reserves 55% to 65% of your scarce borewell water for Weeks 5–10, adjusting watering intervals automatically for fast-draining Red soil (5–6 days) versus moisture-retaining Black soil (9–11 days).',
+          acc3Title: '3. Why Zero-Hardware, Voice-First Design Wins for Small Telangana Farmers',
+          acc3Para1: 'IoT soil probes cost ₹8,000–₹25,000 per acre, require batteries and field maintenance, and often get damaged during ploughing. Smallholder farmers in Telangana cannot afford sensor hardware.',
+          acc3Para2: 'KharifShield runs at ₹0 hardware cost in any mobile browser, works offline with district climate fallbacks when rural cellular data drops, maps local towns and suburbs (like Dammaiguda or Bachupally) to their district automatically, and reads every instruction aloud in calm, plain Telugu and English.',
+          acc4Title: '4. Live Rainfall Override & Root Waterlogging Protection',
+          acc4Para1: 'Every time you check your plan, KharifShield queries live 3-day district precipitation from Open-Meteo. If ≥12 mm of useful rain is expected, it pauses pumping to save a full borewell cycle.',
+          acc4Para2: 'If a heavy rainstorm or cyclone (>30 mm) approaches, an immediate red alert overrides the schedule, instructing the farmer to keep pumps off and clear field drainage channels because standing water for over 24 hours suffocates maize roots.',
+          roadmapTag: 'Phase-2 Omni-Channel Farmer Reach',
+          roadmapHeading: 'Future Expansion: WhatsApp, SMS & Dial-In AI Voice Line',
+          roadmapSub: 'To reach every farmer across Telangana—including elders with basic keypad phones and low literacy—our modular water engine is built to plug directly into three familiar channels:',
+          roadWaTitle: '1. Automated WhatsApp Alerts & Voice Notes',
+          roadWaDesc: 'Farmers register once by sending their village name and sowing date on WhatsApp. Every morning at 6:30 AM, KharifShield sends a personalized Telugu/English message plus a 15-second voice note telling them whether to water today or wait for rain—no app installation needed.',
+          roadSmsTitle: '2. Offline 2G / Feature-Phone SMS Alerts',
+          roadSmsDesc: 'In remote villages with zero mobile internet, automated SMS gateway alerts deliver concise Telugu/English watering decisions and urgent heavy-rain cyclone warnings directly to basic keypad phones before farmers walk to their borewell starters.',
+          roadCallTitle: '3. Toll-Free Number to Talk Directly to AI',
+          roadCallDesc: 'Farmers who cannot read or type can simply dial a free toll-free helpline number from any phone and speak naturally in Telugu ("మా పొలంలో కంకి దశ నడుస్తోంది, ఈరోజు నీరు పెట్టాలా?"). Our conversational voice AI checks their district weather and answers live on the call.',
+          cycloneSimTag: 'Extreme Rain Override Test',
+          cycloneSimTitle: 'Test Heavy Rain / Cyclone Alert (68 mm)',
+          cycloneSimDesc: 'Simulate a 68 mm cyclone forecast to verify how KharifShield triggers an immediate red Pause Pumping alert across both tabs.',
+          activateCycloneBtn: 'Test Heavy Rain / Cyclone Alert (68 mm)',
+          deactivateCycloneBtn: 'Stop Cyclone Simulation',
+          scienceTag: 'Methodology & Honest Scope',
+          scienceTitle: 'Scientific Foundation & Honest Limits',
+          sciPoint1: 'FAO-56 / FAO-33 Water Model: Prioritizes Cob-Forming weeks (Ky = 1.50) over early growth (Ky = 0.40) and ripening (Ky = 0.50).',
+          sciPoint2: 'Open-Meteo Live Weather: Fetches 3-day district precipitation with automatic offline climatology backup.',
+          sciPoint3: 'Honest Limits: Uses 3 soil presets (Red/Mixed/Black) and district-level yield baselines rather than plot lab assays.',
+          footerNote: 'KharifShield • Zero-Hardware Water Planner for Telangana Maize Farmers',
+          geminiKeyFooterBtn: 'Gemini API Key',
+          reportModalTag: 'Plain-Language 6-Part Guide',
+          reportModalHeading: 'Detailed Maize Water & Rain Report',
+          readDetailedBtn: 'Read Detailed Report Aloud',
+          closeBtn: 'Close ✕',
+          geminiModalHeading: 'Gemini API Key (Optional)',
+          geminiModalDesc: 'KharifShield includes a complete offline smart helper. Optionally paste your Google Gemini API key (stored locally in your browser) to enable live cloud replies.',
+          clearBtn: 'Clear',
+          saveBtn: 'Save Key',
+          tourExitBtn: 'Exit ✕',
+          tourContinueBtn: 'Continue →',
+          tourMinimizeBtn: 'Minimize —',
+          tourExpandBtn: 'Expand ↑',
+          helpDistrict: 'Select any of the 33 Telangana districts. Districts with ★ Major Maize are primary Kharif maize belts.',
+          helpCropAge: 'Weeks 5–10 (Cob-Forming ★) is the most sensitive stage. Saving borewell water for these weeks keeps cobs full of grains.',
+          helpSoilType: 'Red soil drains quickly; Mixed soil holds balanced moisture; Black soil holds water nearly twice as long.',
+          helpWaterLeft: 'Pick how much borewell water you have left (25% Low, 50% Half, 75% Good, or 100% Full) so we can plan your waterings.',
+          urbanDistrictMsg: 'Note: Urban/low-maize district selected — peri-urban maize calibration applied.'
+        },
+        te: {
+          brandSub: 'తెలంగాణ మొక్కజొన్న ప్రణాళిక',
+          guideMeBtn: 'గైడ్ చేయండి',
+          darkModeBtn: 'డార్క్ మోడ్',
+          lightModeBtn: 'లైట్ మోడ్',
+          cycloneTitle: 'భారీ వర్షం / తుఫాను హెచ్చరిక: వెంటనే నీరు పెట్టడం ఆపండి!',
+          cycloneDesc: 'రాబోయే 3 రోజుల్లో భారీ వర్షం (>30 mm) అంచనా ఉంది. బోరు మోటారు ఆపి పొలంలో నీరు బయటకు పోయే దారులు తెరవండి.',
+          turnOffCycloneBtn: 'సిమ్యులేటర్ ఆపివేయండి',
+          tabFarmer: '🌾 రైతు యాప్',
+          tabJudges: '⚖️ పనిచేసే విధానం (జడ్జిలకు)',
+          heroBadge: 'సెన్సార్లు లేవు • హార్డ్‌వేర్ లేదు • 33 తెలంగాణ జిల్లాలు',
+          heroHeadline: 'ఖరీఫ్ మొక్కజొన్నకు స్మార్ట్ నీటి సమయం — సెన్సార్లు లేకుండానే',
+          heroSubtext: '3-రోజుల లైవ్ వర్షపు సూచన, నేల రకం మరియు మీ బోరు నీటి నిల్వ ఆధారంగా కీలకమైన కంకి దశలో పంటను కాపాడుకోండి.',
+          heroSideTag: 'అత్యధిక ప్రాధాన్యత దశ',
+          heroSideVal: '5–10 వారాలు (కంకి ఏర్పడే దశ)',
+          step1Badge: 'Step 1 / 2',
+          step1Heading: 'మీ పొలం వివరాలు',
+          activeStepPill: '● ఇప్పుడు చురుకుగా ఉంది',
+          planReadyTag: '✓ నీటి ప్రణాళిక సిద్ధం',
+          speakDetailsBtn: 'వివరాలు మాట్లాడండి',
+          sandboxMicHint: 'ప్రివ్యూ బాక్స్‌లో లైవ్ మైక్ ఆపబడింది — క్రింది ఉదాహరణ నొక్కండి లేదా టైప్ చేయండి (Chrome లో నేరుగా తెరిస్తే లైవ్ మైక్ పనిచేస్తుంది):',
+          outsideTitle: 'తెలంగాణ వెలుపల ప్రాంతం గుర్తించబడింది',
+          outsideDesc: 'ఖరీఫ్‌షీల్డ్ తెలంగాణలోని 33 జిల్లాల కోసం రూపొందించబడింది. సమీప తెలంగాణ జిల్లా (హైదరాబాద్ / రంగారెడ్డి) ఆధారంగా చూపిస్తున్నాము.',
+          labelDistrict: '1. జిల్లా (తెలంగాణ)',
+          labelCropAge: '2. పంట వయస్సు',
+          ageOptYoung: '1. చిన్న మొక్కలు (1–4 వారాలు)',
+          ageOptTassel: '2. కంకి ఏర్పడే దశ ★ (5–10 వారాలు)',
+          ageOptCobFill: '3. గింజ గట్టిపడే దశ (11+ వారాలు)',
+          ageHelperSub: 'వాయిస్ ద్వారా "20 రోజులు", "6 వారాలు", లేదా "2 నెలలు" అని చెప్పవచ్చు.',
+          labelSoilType: '3. నేల రకం (మట్టి)',
+          soilRedTitle: 'ఎర్ర నేల',
+          soilRedDesc: 'నీరు త్వరగా ఇంకిపోతుంది, తేలికపాటి తడులు అవసరం',
+          soilMixedTitle: 'మిశ్రమ నేల',
+          soilMixedDesc: 'సమతుల్యంగా తేమను నిలుపుకుంటుంది',
+          soilBlackTitle: 'నల్ల నేల',
+          soilBlackDesc: 'నీటిని రెట్టింపు రోజులు నిల్వ ఉంచుతుంది',
+          labelWaterLeft: '4. మిగిలి ఉన్న బోరు నీరు',
+          tank25Title: '25% తక్కువ',
+          tank25Sub: 'సుమారు 1 తడి నీరు ఉంది',
+          tank50Title: '50% సగం',
+          tank50Sub: 'సుమారు 2 తడుల నీరు ఉంది',
+          tank75Title: '75% మంచి నిల్వ',
+          tank75Sub: 'సుమారు 3 తడుల నీరు ఉంది',
+          tank100Title: '100% పూర్తి',
+          tank100Sub: 'సుమారు 4 తడుల నీరు ఉంది',
+          checkPlanBtn: 'నా నీటి ప్రణాళిక చూడండి',
+          checkingPlanBtn: 'వర్షం & నీటి ప్రణాళిక తనిఖీ చేస్తోంది...',
+          step2Badge: 'Step 2 / 2',
+          step2Heading: 'మీ నీటి ప్రణాళిక సారాంశం',
+          readSummaryBtn: 'సారాంశం వినండి',
+          detailedReportBtn: 'పూర్తి నివేదిక చూడండి',
+          actionBannerTag: 'ఈరోజు స్పష్టమైన నిర్ణయం',
+          whatToDoLabel: 'ఈరోజు ఏమి చేయాలి',
+          whyProtectsLabel: 'ఇది మీ పంటను ఎలా కాపాడుతుంది',
+          metricRainTitle: '3-రోజుల వర్షపు సూచన',
+          metricHarvestTitle: 'రక్షించబడిన దిగుబడి (%)',
+          metricPriorityTitle: 'అత్యధిక ప్రాధాన్యత దశ',
+          metricPriorityStage: '5–10 వారాలు (కంకి ఏర్పడే దశ)',
+          metricPrioritySub: 'అత్యంత కీలకమైన దిగుబడి సమయం',
+          stageSplitTitle: '3-దశల నీటి విభజన వివరాలు',
+          stage1CardTitle: '1. 1–4 వారాలు (చిన్న మొక్కలు)',
+          stage2CardTitle: '2. 5–10 వారాలు ★ (కంకి ఏర్పడే దశ)',
+          stage3CardTitle: '3. 11+ వారాలు (గింజ గట్టిపడే దశ)',
+          step3Badge: 'పొలం & పంట సహాయకుడు',
+          step3Heading: 'ఇతర సహాయం కోసం ఖరీఫ్‌షీల్డ్ AI ని అడగండి',
+          aiOfflineTag: 'స్మార్ట్ మొక్కజొన్న సహాయకుడు సిద్ధం',
+          aiLiveTag: 'జెమిని లైవ్ AI సిద్ధం',
+          chipSoilCheck: 'చేతితో మట్టి తేమను ఎలా తనిఖీ చేయాలి?',
+          chipBestTime: 'రోజులో ఏ సమయంలో బోరు వేయడం మంచిది?',
+          chipFertilizer: 'నీటితో పాటు ఎరువులు ఎప్పుడు వేయాలి?',
+          chipRain: 'భారీ వర్షం వల్ల పొలంలో నీరు నిలిస్తే ఏమి చేయాలి?',
+          chatInputPlaceholder: 'మీ పొలం, మట్టి, వర్షం లేదా బోరు సమయం గురించి అడగండి...',
+          chatSendBtn: 'పంపండి',
+          judgeLiveSyncTag: 'రైతు యాప్‌తో అనుసంధానం',
+          judgeBenchTag: 'చారిత్రక జిల్లా దిగుబడి ఆధారం',
+          judgeYieldRangeLabel: 'జిల్లా దిగుబడి పరిధి (90% PI)',
+          judgeRainNormalLabel: 'సాధారణ ఖరీఫ్ వర్షపాతం',
+          judgeScaleNoteLabel: 'బెంచ్‌మార్క్ పరిధి',
+          judgeScaleNoteTitle: 'జిల్లా-స్థాయి ఆధారం',
+          judgeScaleNoteDesc: 'సూచన ఆధారం మాత్రమే — ప్రతి పొలానికి కచ్చితమైన దిగుబడి హామీ కాదు.',
+          chartTag: 'FAO-33 సాపేక్ష దిగుబడి రక్షణ',
+          chartHeading: 'నీటి పారుదల ప్రణాళికల దిగుబడి పోలిక',
+          schedEarly: '1. మొదట్లో ఎక్కువ (50% / 35% / 15%)',
+          schedEven: '2. సమాన విభజన (33% / 33% / 34%)',
+          schedRule: '3. పూత నియమం (25% / 45% / 30%)',
+          schedOptimal: '4. ఖరీఫ్‌షీల్డ్ ఉత్తమ విభజన',
+          deepDiveTag: 'సిస్టమ్ పనిచేసే పూర్తి వివరాలు',
+          deepDiveHeading: 'ఖరీఫ్‌షీల్డ్ ఎందుకు & ఎలా పనిచేస్తుంది — వివరాల కోసం నొక్కండి',
+          deepDiveHint: 'పూర్తి వివరణ చదవడానికి క్రింది కార్డులను నొక్కండి',
+          acc1Title: '1. సాధారణ వాతావరణ యాప్‌ల కంటే ఖరీఫ్‌షీల్డ్ ఎందుకు మెరుగైనది?',
+          acc1Para1: 'సాధారణ వాతావరణ యాప్‌లు కేవలం "రేపు 14 mm వర్షం" అని మాత్రమే చూపిస్తాయి, కానీ బోరు మోటారు వేయాలో వద్దో రైతుకు స్పష్టంగా చెప్పవు.',
+          acc1Para2: 'ఖరీఫ్‌షీల్డ్ మీ బోరు నీటి నిల్వ (25%–100%), నేల రకం (ఎర్ర, మిశ్రమ, నల్ల), పంట వయస్సు మరియు 3-రోజుల లైవ్ వర్షాన్ని కలిపి ఈరోజు ఏమి చేయాలో స్పష్టంగా చెబుతుంది.',
+          acc2Title: '2. దశలవారీ నీటి ఇంజిన్ ఎలా పనిచేస్తుంది (FAO-56 / FAO-33)?',
+          acc2Para1: 'మొక్కజొన్నకు ప్రతి వారం ఒకే విధంగా నీరు అవసరం లేదు. 5–10 వారాల కంకి ఏర్పడే దశలో నీరు తగ్గితే దిగుబడి భారీగా పడిపోతుంది (Ky = 1.50).',
+          acc2Para2: 'అందుకే మొదట్లో తక్కువ నీరు ఇచ్చి వేర్లు లోతుకు వెళ్ళేలా చేసి, 55% నుండి 65% బోరు నీటిని కంకి ఏర్పడే వారాలకే దాచిపెడుతుంది.',
+          acc3Title: '3. సెన్సార్లు లేని వాయిస్ డిజైన్ చిన్న రైతులకు ఎందుకు ఉపయోగకరం?',
+          acc3Para1: 'భూమిలో అమర్చే సెన్సార్లకు ఎకరాకు ₹8,000–₹25,000 ఖర్చవుతుంది మరియు దున్నేటప్పుడు పాడైపోతాయి.',
+          acc3Para2: 'ఖరీఫ్‌షీల్డ్ ఎలాంటి హార్డ్‌వేర్ ఖర్చు లేకుండా మొబైల్ బ్రౌజర్‌లోనే పనిచేస్తుంది, గ్రామాల పేర్లను (దమ్మాయిగూడ, బాచుపల్లి వంటివి) గుర్తించి తెలుగులో చదివి వినిపిస్తుంది.',
+          acc4Title: '4. భారీ వర్షం నిలిపివేత & వేర్ల రక్షణ',
+          acc4Para1: '12 mm కంటే ఎక్కువ వర్షం రానుంటే వెంటనే పంపింగ్ ఆపి ఒక పూర్తి బోరు తడిని ఆదా చేస్తుంది.',
+          acc4Para2: '30 mm కంటే ఎక్కువ తుఫాను వర్షం ఉంటే ఎరుపు హెచ్చరిక ఇచ్చి, పొలంలో నీరు నిలవకుండా కాలువలు తెరవమని సూచిస్తుంది.',
+          roadmapTag: 'ఫేజ్-2 విస్తరణ ప్రణాళిక',
+          roadmapHeading: 'భవిష్యత్ విస్తరణ: వాట్సాప్, SMS & టోల్-ఫ్రీ AI వాయిస్ కాల్',
+          roadmapSub: 'సాధారణ కీప్యాడ్ ఫోన్లు వాడే రైతులు మరియు చదువు రాని పెద్దల వరకు చేరుకోవడానికి మా సిస్టమ్ మూడు సులభమైన మార్గాలలో పనిచేస్తుంది:',
+          roadWaTitle: '1. ఆటోమేటెడ్ వాట్సాప్ అలర్ట్‌లు & వాయిస్ నోట్స్',
+          roadWaDesc: 'రైతులు వాట్సాప్‌లో తమ గ్రామం పేరు పంపితే చాలు, ప్రతి ఉదయం 6:30 కి తెలుగులో సందేశంతో పాటు 15 సెకన్ల వాయిస్ నోట్ ద్వారా ఈరోజు నీరు పెట్టాలో వద్దో తెలుస్తుంది.',
+          roadSmsTitle: '2. ఇంటర్నెట్ లేని 2G / కీప్యాడ్ ఫోన్ SMS అలర్ట్‌లు',
+          roadSmsDesc: 'మొబైల్ ఇంటర్నెట్ లేని మారుమూల గ్రామాలలో కూడా సాధారణ కీప్యాడ్ ఫోన్లకు SMS ద్వారా నీటి సమయం మరియు తుఫాను హెచ్చరికలు అందుతాయి.',
+          roadCallTitle: '3. టోల్-ఫ్రీ నంబర్‌కు కాల్ చేసి AI తో నేరుగా మాట్లాడటం',
+          roadCallDesc: 'టైప్ చేయలేని రైతులు ఉచిత టోల్-ఫ్రీ నంబర్‌కు కాల్ చేసి తెలుగులో ("మా పొలంలో కంకి దశ నడుస్తోంది, ఈరోజు నీరు పెట్టాలా?") అని అడిగితే AI వెంటనే లైవ్ సమాధానం చెబుతుంది.',
+          cycloneSimTag: 'భారీ వర్షం నిలిపివేత పరీక్ష',
+          cycloneSimTitle: 'భారీ వర్షం / తుఫాను అలర్ట్ పరీక్ష (68 mm)',
+          cycloneSimDesc: '68 mm తుఫాను వర్షాన్ని అనుకరించి రెండు ట్యాబ్‌లలో ఎరుపు నీరు నిలిపివేత హెచ్చరిక ఎలా వస్తుందో చూడండి.',
+          activateCycloneBtn: 'భారీ వర్షం / తుఫాను అలర్ట్ పరీక్ష (68 mm)',
+          deactivateCycloneBtn: 'తుఫాను సిమ్యులేషన్ ఆపివేయండి',
+          scienceTag: 'శాస్త్రీయ విధానం & పరిమితులు',
+          scienceTitle: 'శాస్త్రీయ ఆధారం & నిజాయితీ పరిమితులు',
+          sciPoint1: 'FAO-56 / FAO-33 మోడల్: కంకి ఏర్పడే వారాలకు (Ky = 1.50) అత్యధిక ప్రాధాన్యత ఇస్తుంది.',
+          sciPoint2: 'Open-Meteo లైవ్ వాతావరణం: 3-రోజుల జిల్లా వర్షపాతం మరియు ఆఫ్‌లైన్ బ్యాకప్‌తో పనిచేస్తుంది.',
+          sciPoint3: 'నిజాయితీ పరిమితులు: 3 నేల రకాలు (ఎర్ర/మిశ్రమ/నల్ల) మరియు జిల్లా-స్థాయి బెంచ్‌మార్క్ ఆధారంగా పనిచేస్తుంది.',
+          footerNote: 'ఖరీఫ్‌షీల్డ్ • తెలంగాణ మొక్కజొన్న రైతుల కోసం జీరో-హార్డ్‌వేర్ నీటి ప్రణాళిక',
+          geminiKeyFooterBtn: 'జెమిని API కీ',
+          reportModalTag: 'సులభమైన 6-భాగాల గైడ్',
+          reportModalHeading: 'సమగ్ర మొక్కజొన్న నీటి & వర్షపు నివేదిక',
+          readDetailedBtn: 'పూర్తి నివేదిక వినండి',
+          closeBtn: 'మూసివేయండి ✕',
+          geminiModalHeading: 'జెమిని API కీ (ఐచ్ఛికం)',
+          geminiModalDesc: 'ఖరీఫ్‌షీల్డ్‌లో పూర్తి ఆఫ్‌లైన్ స్మార్ట్ సహాయకుడు ఉంది. లైవ్ క్లౌడ్ సమాధానాల కోసం మీ Google Gemini API కీని ఇక్కడ ఉంచవచ్చు.',
+          clearBtn: 'తొలగించు',
+          saveBtn: 'కీ సేవ్ చేయి',
+          tourExitBtn: 'ఆపు ✕',
+          tourContinueBtn: 'కొనసాగించు →',
+          tourMinimizeBtn: 'చిన్నది —',
+          tourExpandBtn: 'విస్తరించు ↑',
+          helpDistrict: 'తెలంగాణలోని 33 జిల్లాలలో మీ జిల్లాను ఎంచుకోండి. ★ Major Maize ఉన్నవి ప్రధాన మొక్కజొన్న జిల్లాలు.',
+          helpCropAge: '5–10 వారాలు (కంకి ఏర్పడే దశ ★) అత్యంత కీలక దశ. ఈ దశకు నీరు దాచడం వల్ల కంకి నిండుగా గింజలు పడతాయి.',
+          helpSoilType: 'ఎర్ర నేలలో నీరు త్వరగా ఇంకుతుంది; మిశ్రమ నేల సమతుల్యంగా ఉంటుంది; నల్ల నేల రెట్టింపు రోజులు తేమ ఉంచుతుంది.',
+          helpWaterLeft: 'మీ బోరులో మిగిలిన నీరు: 25% తక్కువ, 50% సగం, 75% మంచి నిల్వ, లేదా 100% పూర్తి ఎంచుకోండి.',
+          urbanDistrictMsg: 'గమనిక: పట్టణ/పరిసర జిల్లా ఎంచుకోబడింది — పరిసర మొక్కజొన్న కాలిబ్రేషన్ వర్తింపజేయబడింది.'
+        }
+      };
+
+      // =========================================================================
+      // 3. APPLICATION STATE & DOM HELPERS
+      // =========================================================================
+      const state = {
+        lang: 'en',
+        darkMode: false,
+        activeTab: 'farmer',
+        districtId: 'warangal',
+        cropAge: 'tassel',
+        soil: 'mixed',
+        tankPct: 50,
+        rain3DayMm: 12,
+        rainDaily: [
+          { en: 'Today', te: 'ఈరోజు', mm: 2 },
+          { en: 'Tom', te: 'రేపు', mm: 6 },
+          { en: 'Day 3', te: '3వ రోజు', mm: 4 }
+        ],
+        weatherSource: 'live',
+        cycloneSimulated: false,
+        tourIndex: -1,
+        tourMinimized: false,
+        currentPlan: null
+      };
+
+      function $(id) {
+        return document.getElementById(id);
+      }
+
+      // Dynamic non-overlapping bottom positioning for Guide Me card vs Audio Pill
+      function syncFloatingOverlayPositions() {
+        const pill = $('floating-audio-pill');
+        const tourCard = $('guide-tour-card');
+        if (!tourCard) return;
+        const audioVisible = pill && !pill.classList.contains('hidden');
+        if (audioVisible) {
+          tourCard.classList.remove('bottom-3');
+          tourCard.classList.add('bottom-12');
+        } else {
+          tourCard.classList.remove('bottom-12');
+          tourCard.classList.add('bottom-3');
+        }
+      }
+
+      // =========================================================================
+      // 4. CALM SPEECH ENGINE (rate = 0.78 TE / 0.85 EN, CANCEL-SAFE SESSIONS)
+      // =========================================================================
+      function normalizeTextForSpeech(rawText, lang) {
+        if (!rawText) return '';
+        let txt = String(rawText);
+        if (lang === 'te') {
+          txt = txt.replace(/\bStep\s*1\b\s*:?/gi, 'స్టెప్ వన్, ');
+          txt = txt.replace(/\bStep\s*2\b\s*:?/gi, 'స్టెప్ టూ, ');
+          txt = txt.replace(/\bStep\s*(\d+)\b\s*:?/gi, 'స్టెప్ $1, ');
+          txt = txt.replace(/\bAI\b/g, 'ఏ ఐ');
+          txt = txt.replace(/(\d+)\s*[–-]\s*(\d+)/g, '$1 నుండి $2');
+          txt = txt.replace(/(\d+(?:\.\d+)?)\s*mm\b/gi, '$1 మిల్లీమీటర్లు');
+          txt = txt.replace(/\bmm\b/gi, 'మిల్లీమీటర్లు');
+          txt = txt.replace(/(\d+(?:\.\d+)?)\s*%/g, '$1 శాతం');
+          txt = txt.replace(/[★•|():]/g, ', ');
+        } else {
+          txt = txt.replace(/(\d+)\s*[–-]\s*(\d+)/g, '$1 to $2');
+          txt = txt.replace(/(\d+(?:\.\d+)?)\s*mm\b/gi, '$1 millimeters');
+          txt = txt.replace(/[★•|]/g, ', ');
+        }
+        return txt.replace(/\s+/g, ' ').trim();
+      }
+
+      const AudioPlayer = {
+        cancelled: false,
+        paused: false,
+        chunks: [],
+        index: 0,
+        playbackId: 0,
+        startTimer: null,
+        nextTimer: null,
+
+        chunkText(text) {
+          if (!text) return [];
+          const clean = String(text).replace(/\s+/g, ' ').trim();
+          const parts = clean.match(/[^.!?।]+[.!?।]*/g) || [clean];
+          const out = [];
+          for (const p of parts) {
+            const s = p.trim();
+            if (!s) continue;
+            if (s.length <= 135) {
+              out.push(s);
+            } else {
+              const words = s.split(' ');
+              let line = '';
+              for (const w of words) {
+                if ((line + ' ' + w).trim().length > 125) {
+                  if (line) out.push(line.trim());
+                  line = w;
+                } else {
+                  line = (line + ' ' + w).trim();
+                }
+              }
+              if (line) out.push(line.trim());
+            }
+          }
+          return out;
+        },
+
+        showPill(title) {
+          const pill = $('floating-audio-pill');
+          const titleEl = $('audio-pill-title');
+          const pauseBtn = $('audio-pill-pause-btn');
+          const stopBtn = $('audio-pill-stop-btn');
+          if (!pill) return;
+          if (titleEl) titleEl.textContent = title || (state.lang === 'te' ? 'వినిపిస్తోంది...' : 'Reading Aloud...');
+          if (pauseBtn) pauseBtn.textContent = state.lang === 'te' ? 'ఆపు' : 'Pause';
+          if (stopBtn) stopBtn.textContent = state.lang === 'te' ? 'ఆపివేయి ✕' : 'Stop ✕';
+          pill.classList.remove('hidden');
+          syncFloatingOverlayPositions();
+        },
+
+        hidePill() {
+          const pill = $('floating-audio-pill');
+          if (pill) pill.classList.add('hidden');
+          syncFloatingOverlayPositions();
+        },
+
+        stop() {
+          this.playbackId += 1;
+          this.cancelled = true;
+          this.paused = false;
+          this.chunks = [];
+          this.index = 0;
+          if (this.startTimer) {
+            clearTimeout(this.startTimer);
+            this.startTimer = null;
+          }
+          if (this.nextTimer) {
+            clearTimeout(this.nextTimer);
+            this.nextTimer = null;
+          }
+          try {
+            if ('speechSynthesis' in window) {
+              window.speechSynthesis.cancel();
+            }
+          } catch (e) {
+            // Safe cancel
+          }
+          this.hidePill();
+        },
+
+        togglePause() {
+          if (!('speechSynthesis' in window)) return;
+          const pauseBtn = $('audio-pill-pause-btn');
+          try {
+            if (this.paused) {
+              window.speechSynthesis.resume();
+              this.paused = false;
+              if (pauseBtn) pauseBtn.textContent = state.lang === 'te' ? 'ఆపు' : 'Pause';
+            } else {
+              window.speechSynthesis.pause();
+              this.paused = true;
+              if (pauseBtn) pauseBtn.textContent = state.lang === 'te' ? 'కొనసాగించు' : 'Resume';
+            }
+          } catch (e) {
+            this.stop();
+          }
+        },
+
+        speak(text, pillTitle) {
+          if (!('speechSynthesis' in window) || !text) return;
+          this.stop();
+          this.playbackId += 1;
+          const myId = this.playbackId;
+          this.cancelled = false;
+          this.paused = false;
+          const normalized = normalizeTextForSpeech(text, state.lang);
+          this.chunks = this.chunkText(normalized);
+          this.index = 0;
+          if (this.chunks.length === 0) return;
+
+          this.showPill(pillTitle);
+          this.startTimer = setTimeout(() => {
+            if (this.cancelled || myId !== this.playbackId) return;
+            try {
+              if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+              }
+            } catch (e) {
+              // Safe resume
+            }
+            this.playNext(myId);
+          }, 130);
+        },
+
+        playNext(myId) {
+          if (this.cancelled || myId !== this.playbackId) return;
+          if (this.index >= this.chunks.length) {
+            this.hidePill();
+            return;
+          }
+
+          const utter = new SpeechSynthesisUtterance(this.chunks[this.index]);
+          utter.lang = state.lang === 'te' ? 'te-IN' : 'en-IN';
+          utter.rate = state.lang === 'te' ? 0.78 : 0.85;
+          utter.pitch = 1.0;
+
+          const voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+          if (voices.length > 0) {
+            const prefix = state.lang === 'te' ? 'te' : 'en';
+            const found = voices.find((v) => v.lang && v.lang.toLowerCase().startsWith(prefix));
+            if (found) utter.voice = found;
+          }
+
+          utter.onend = () => {
+            if (this.cancelled || myId !== this.playbackId) return;
+            this.index += 1;
+            this.nextTimer = setTimeout(() => {
+              if (!this.cancelled && myId === this.playbackId) {
+                this.playNext(myId);
+              }
+            }, 260);
+          };
+
+          utter.onerror = () => {
+            if (this.cancelled || myId !== this.playbackId) return;
+            this.hidePill();
+          };
+
+          try {
+            window.speechSynthesis.speak(utter);
+          } catch (e) {
+            this.hidePill();
+          }
+        }
+      };
+
+      // =========================================================================
+      // 5. POPULATE DISTRICTS & APPLY BILINGUAL TRANSLATIONS
+      // =========================================================================
+      function renderDistrictOptions() {
+        const dropdown = $('district-dropdown');
+        if (!dropdown) return;
+        const selected = state.districtId;
+        dropdown.innerHTML = '';
+
+        DISTRICTS.forEach((d) => {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          const label = state.lang === 'te' ? d.te : d.en;
+          const tag = d.major ? (state.lang === 'te' ? ' ★ ప్రధాన మొక్కజొన్న జిల్లా' : ' ★ Major Maize District') : '';
+          opt.textContent = `${label}${tag}`;
+          dropdown.appendChild(opt);
+        });
+
+        dropdown.value = selected;
+        updateUrbanNote();
+      }
+
+      function updateUrbanNote() {
+        const dist = DISTRICTS.find((d) => d.id === state.districtId);
+        const noteEl = $('urban-district-note');
+        const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.en;
+        if (!noteEl) return;
+        if (dist && dist.urban) {
+          noteEl.textContent = dict.urbanDistrictMsg;
+          noteEl.classList.remove('hidden');
+        } else {
+          noteEl.classList.add('hidden');
+        }
+      }
+
+      function applyLanguageUI() {
+        const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.en;
+
+        document.querySelectorAll('[data-i18n]').forEach((el) => {
+          const key = el.getAttribute('data-i18n');
+          if (dict[key]) el.textContent = dict[key];
+        });
+
+        document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+          const key = el.getAttribute('data-i18n-placeholder');
+          if (dict[key]) el.setAttribute('placeholder', dict[key]);
+        });
+
+        const langSwitchText = $('lang-switch-text');
+        if (langSwitchText) {
+          langSwitchText.textContent = state.lang === 'en' ? 'తెలుగు' : 'English';
+        }
+
+        const darkLabel = $('dark-mode-label');
+        if (darkLabel) {
+          darkLabel.textContent = state.darkMode ? dict.lightModeBtn : dict.darkModeBtn;
+        }
+
+        const minBtn = $('tour-minimize-btn');
+        if (minBtn) {
+          minBtn.textContent = state.tourMinimized ? dict.tourExpandBtn : dict.tourMinimizeBtn;
+        }
+
+        renderDistrictOptions();
+        syncSoilSelectionUI(false);
+        syncTankSelectionUI();
+        recomputeAndRenderPlan();
+        resetChatGreeting();
+      }
+
+      // =========================================================================
+      // 6. SOIL & TANK CARD SELECTION UI (STRICT DARK MODE READABILITY)
+      // =========================================================================
+      function syncSoilSelectionUI(animatePop) {
+        document.querySelectorAll('.soil-tap-card').forEach((card) => {
+          const val = card.getAttribute('data-soil');
+          const badge = card.querySelector('.soil-check-badge');
+          const isSelected = val === state.soil;
+          card.classList.remove('soil-selected-pop');
+
+          if (isSelected) {
+            card.classList.remove('unselected-option-card');
+            card.classList.add('selected-option-card');
+            if (badge) {
+              badge.textContent = state.lang === 'te' ? '✓ ఎంచుకోబడింది' : '✓ Selected';
+              badge.classList.remove('hidden');
+            }
+            if (animatePop) {
+              void card.offsetWidth;
+              card.classList.add('soil-selected-pop');
+            }
+          } else {
+            card.classList.remove('selected-option-card');
+            card.classList.add('unselected-option-card');
+            if (badge) badge.classList.add('hidden');
+          }
+        });
+      }
+
+      function syncTankSelectionUI() {
+        document.querySelectorAll('.tank-tap-btn').forEach((btn) => {
+          const tVal = Number(btn.getAttribute('data-tank'));
+          if (tVal === Number(state.tankPct)) {
+            btn.classList.remove('unselected-option-card');
+            btn.classList.add('selected-option-card');
+          } else {
+            btn.classList.remove('selected-option-card');
+            btn.classList.add('unselected-option-card');
+          }
+        });
+      }
+
+      // =========================================================================
+      // 7. OPEN-METEO LIVE 3-DAY RAIN + OFFLINE CLIMATOLOGY BACKUP
+      // =========================================================================
+      async function fetch3DayRain(district) {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${district.lat}&longitude=${district.lon}&daily=precipitation_sum&timezone=Asia%2FKolkata&forecast_days=3`;
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 4500);
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timer);
+          if (!res.ok) throw new Error('HTTP error');
+
+          const data = await res.json();
+          const arr = data?.daily?.precipitation_sum;
+          if (Array.isArray(arr) && arr.length >= 3) {
+            const d0 = Math.round((Number(arr[0]) || 0) * 10) / 10;
+            const d1 = Math.round((Number(arr[1]) || 0) * 10) / 10;
+            const d2 = Math.round((Number(arr[2]) || 0) * 10) / 10;
+            state.rain3DayMm = Math.round((d0 + d1 + d2) * 10) / 10;
+            state.rainDaily = [
+              { en: 'Today', te: 'ఈరోజు', mm: d0 },
+              { en: 'Tom', te: 'రేపు', mm: d1 },
+              { en: 'Day 3', te: '3వ రోజు', mm: d2 }
+            ];
+            state.weatherSource = 'live';
+            return;
+          }
+          throw new Error('Invalid rain payload');
+        } catch (err) {
+          const vals = district.rain >= 880 ? [3, 8, 4] : [2, 6, 4];
+          state.rain3DayMm = vals[0] + vals[1] + vals[2];
+          state.rainDaily = [
+            { en: 'Today', te: 'ఈరోజు', mm: vals[0] },
+            { en: 'Tom', te: 'రేపు', mm: vals[1] },
+            { en: 'Day 3', te: '3వ రోజు', mm: vals[2] }
+          ];
+          state.weatherSource = 'offline';
+        }
+      }
+
+      // =========================================================================
+      // 8. PLAIN-LANGUAGE WATER OPTIMIZER & RENDERER (ZERO JARGON)
+      // =========================================================================
+      function recomputeAndRenderPlan() {
+        const dist = DISTRICTS.find((d) => d.id === state.districtId) || DISTRICTS[31];
+        const isTe = state.lang === 'te';
+        const distName = isTe ? dist.te : dist.en;
+        const rainMm = state.cycloneSimulated ? 68 : state.rain3DayMm;
+        const tank = Number(state.tankPct);
+        const soil = state.soil;
+        const stage = state.cropAge;
+
+        const budgetMm = Math.round((tank / 100) * 180);
+        const split = tank <= 25
+          ? { s1: 10, s2: 65, s3: 25 }
+          : tank <= 50
+            ? { s1: 15, s2: 60, s3: 25 }
+            : { s1: 20, s2: 55, s3: 25 };
+
+        const s1Mm = Math.round((budgetMm * split.s1) / 100);
+        const s2Mm = Math.round((budgetMm * split.s2) / 100);
+        const s3Mm = Math.max(0, budgetMm - s1Mm - s2Mm);
+
+        const s1Count = s1Mm < 15 ? '0' : s1Mm < 30 ? '0–1' : '1';
+        const s2Count = s2Mm < 40 ? '1' : s2Mm < 85 ? '1–2' : '2–3';
+        const s3Count = s3Mm < 20 ? '0–1' : s3Mm < 40 ? '1' : '1–2';
+
+        const soilAdj = soil === 'black' ? 2.4 : soil === 'mixed' ? 0 : -2.1;
+        const baseOpt = tank === 25 ? 58.4 : tank === 50 ? 75.6 : tank === 75 ? 86.2 : 93.8;
+        const optPct = Number(Math.min(97.5, Math.max(46.0, baseOpt + soilAdj)).toFixed(1));
+        const rulePct = Number(Math.max(38.0, optPct - 8.3).toFixed(1));
+        const evenPct = Number(Math.max(28.0, optPct - 27.5).toFixed(1));
+        const earlyPct = Number(Math.max(22.0, optPct - 35.4).toFixed(1));
+
+        let headline = '';
+        let whatToDo = '';
+        let whyProtects = '';
+
+        if (state.cycloneSimulated || rainMm > 30) {
+          headline = isTe
+            ? 'పంపింగ్ ఆపండి — రాబోయే 3 రోజుల్లో భారీ వర్షం సూచన ఉంది'
+            : 'Pause Pumping — Heavy Rain Expected in Next 3 Days';
+          whatToDo = isTe
+            ? `ఈరోజు బోరు మోటారు ఆపండి! ${distName} లో రాబోయే 3 రోజుల్లో ${rainMm} mm భారీ వర్షం అంచనా ఉంది. పొలంలో అదనపు నీరు బయటకు పోయే దారులు శుభ్రం చేయండి.`
+            : `Keep your borewell OFF today! ${distName} has ${rainMm} mm heavy rain forecast over the next 3 days. Keep field drains clear so extra rainwater flows out.`;
+          whyProtects = isTe
+            ? 'మొక్కజొన్న వేర్లు 1 రోజు కంటే ఎక్కువ నీటిలో మునిగితే పంట దెబ్బతింటుంది. వర్షాన్ని వాడుకోవడం వల్ల బోరు నీరు మరియు కరెంటు పూర్తిగా ఆదా అవుతాయి.'
+            : 'Standing water for over a day harms maize roots. Using incoming rain keeps roots healthy and saves 100% of your borewell water.';
+        } else if (rainMm >= 12) {
+          headline = isTe
+            ? `2 రోజులు నీరు ఆపండి — ${rainMm} mm మంచి వర్షం రానుంది`
+            : `Wait 2 Days — ${rainMm} mm Useful Rain Coming`;
+          whatToDo = isTe
+            ? `ఈరోజు బోరు వేయకండి. ${distName} లో ${rainMm} mm వర్షం పడిన తర్వాత మట్టిని చేతితో నొక్కి తేమను చూసుకోండి.`
+            : `Skip pumping today. Let the ${rainMm} mm rain in ${distName} soak the field first, then check soil moisture by hand after 2 days.`;
+          whyProtects = isTe
+            ? `ఈ వర్షంతో ఒక పూర్తి బోరు తడి ఆదా అవుతుంది. ఆ నీటిని కీలకమైన 5–10 వారాల కంకి దశ కోసం దాచుకోవచ్చు.`
+            : `This rain saves 1 full borewell watering, keeping your ${tank}% water reserve ready for the critical cob-forming weeks.`;
+        } else {
+          const soilFreq = soil === 'red' ? (isTe ? 'ప్రతి 5–6 రోజులకు' : 'every 5–6 days') : soil === 'black' ? (isTe ? 'ప్రతి 9–11 రోజులకు' : 'every 9–11 days') : (isTe ? 'ప్రతి 7–8 రోజులకు' : 'every 7–8 days');
+          if (stage === 'tassel') {
+            headline = isTe
+              ? 'ఈరోజు వరుసల మధ్య తేలికపాటి నీరు పెట్టండి — కీలకమైన కంకి దశ'
+              : 'Give Light Watering Between Rows Today — Cob-Forming Priority';
+            whatToDo = isTe
+              ? `ఉదయం 9 గంటల లోపు లేదా సాయంత్రం 5 తర్వాత మొక్కల వరుసల మధ్య తేలికపాటి నీరు పెట్టండి. ${soil === 'red' ? 'ఎర్ర' : soil === 'black' ? 'నల్ల' : 'మిశ్రమ'} నేలలో ${soilFreq} తేమ చూసుకోండి.`
+              : `Give light watering between plant rows before 9 AM or after 5 PM. On ${soil} soil, keep the root soil gently moist ${soilFreq} without flooding.`;
+            whyProtects = isTe
+              ? `5–10 వారాల కంకి ఏర్పడే దశలో పంటకు నీరు అత్యంత అవసరం. ఇప్పుడు తేమ ఉంటే కంకి చివరి వరకు గింజలు నిండుగా ఏర్పడతాయి.`
+              : `Weeks 5–10 are the most important cob-forming weeks. Steady moisture now helps every cob fill completely with grains.`;
+          } else if (stage === 'young') {
+            headline = isTe
+              ? 'ఈరోజు నీరు ఆపి ఉంచండి — కంకి ఏర్పడే వారాల కోసం నీరు దాచండి'
+              : 'Hold Watering Today — Save Water for Cob-Forming Weeks';
+            whatToDo = isTe
+              ? `చిన్న మొక్కలకు ఎక్కువ నీరు అవసరం లేదు. మట్టి పూర్తిగా ఎండితేనే వరుసల మధ్య తేలికపాటి తడి ఇవ్వండి. మీ ${tank}% నీటిలో ${split.s2}% నీటిని 5వ వారం కోసం దాచండి.`
+              : `Small plants need very little water. Only give a light watering between rows if the soil feels completely dry, saving ${split.s2}% of your ${tank}% water for Week 5+.`;
+            whyProtects = isTe
+              ? `మొదట్లో తక్కువ నీరు పెడితే వేర్లు బలంగా లోతుకు వెళతాయి. ఇప్పుడు ఆదా చేసిన నీరు కంకి దశలో ${optPct}% దిగుబడిని కాపాడుతుంది.`
+              : `Light early watering encourages stronger, deeper roots and ensures you do not run out of water during cob-forming weeks, protecting ${optPct}% of your harvest.`;
+          } else {
+            headline = isTe
+              ? 'గింజ గట్టిపడే దశ: ఒక తేలికపాటి తడి ఇచ్చి కోతకు ముందు ఆపండి'
+              : 'Ripening Stage: Give One Measured Watering, Then Stop Before Harvest';
+            whatToDo = isTe
+              ? `గింజలు గట్టిపడే వరకు ${soilFreq} వరుసల మధ్య తేలికపాటి తడి ఇవ్వండి. కంకి ఆకులు పసుపు రంగులోకి మారాక నీరు పూర్తిగా ఆపండి.`
+              : `Give a light watering between rows ${soilFreq} until grains turn firm, then stop watering once cob husks turn yellow.`;
+            whyProtects = isTe
+              ? `సమతుల్య తేమ గింజ బరువును పెంచుతుంది, కోతకు ముందు నీరు ఆపడం వల్ల కంకి కుళ్ళకుండా నాణ్యమైన పంట వస్తుంది.`
+              : `Balanced moisture adds grain weight, while stopping before harvest prevents cob rot and saves borewell electricity.`;
+          }
+        }
+
+        const soilName = soil === 'red'
+          ? (isTe ? 'ఎర్ర నేల' : 'Red Soil')
+          : soil === 'black'
+            ? (isTe ? 'నల్ల నేల' : 'Black Soil')
+            : (isTe ? 'మిశ్రమ నేల' : 'Mixed Soil');
+
+        const stageName = stage === 'young'
+          ? (isTe ? 'చిన్న మొక్కలు (1–4 వారాలు)' : 'Small Plants (Weeks 1–4)')
+          : stage === 'cobfill'
+            ? (isTe ? 'గింజ గట్టిపడే దశ (11+ వారాలు)' : 'Ripening Stage (Weeks 11+)')
+            : (isTe ? 'కంకి ఏర్పడే దశ (5–10 వారాలు)' : 'Cob-Forming Stage (Weeks 5–10)');
+
+        const reportCards = isTe ? [
+          { title: '1. మీ పొలం వివరాలు', body: `జిల్లా: ${distName}. పంట దశ: ${stageName}. నేల: ${soilName} — ${soil === 'black' ? 'తేమను 9–11 రోజులు నిలుపుకుంటుంది.' : soil === 'red' ? 'నీరు త్వరగా ఇంకుతుంది కాబట్టి తేలికపాటి తడులు అవసరం.' : '7–8 రోజుల పాటు సమతుల్య తేమ ఉంటుంది.'}` },
+          { title: '2. 3-రోజుల వర్షపు తనిఖీ', body: `రాబోయే 3 రోజుల్లో ${rainMm} mm వర్షం అంచనా ఉంది. 12 mm కంటే ఎక్కువ వర్షం పడితే ఒక పూర్తి బోరు తడి ఆదా అవుతుంది.` },
+          { title: '3. దశలవారీ నీటి ప్రణాళిక', body: `చిన్న మొక్కలు (1–4 వారాలు): ${split.s1}% | కంకి ఏర్పడే దశ (5–10 వారాలు): ${split.s2}% ★ | గింజ గట్టిపడే దశ (11+ వారాలు): ${split.s3}%.` },
+          { title: '4. బోరు నీరు & కరెంటు ఆదా', body: `ఉదయం 9 గంటల లోపు లేదా సాయంత్రం 5 తర్వాత వరుసల మధ్య తేలికపాటి నీరు పెట్టడం వల్ల 35–40% బోరు నీరు మరియు కరెంటు ఆదా అవుతుంది.` },
+          { title: '5. దిగుబడి రక్షణ', body: `సమాన విభజన (${evenPct}%) కంటే ఖరీఫ్‌షీల్డ్ ప్రణాళిక (${optPct}%) ద్వారా +${(optPct - evenPct).toFixed(1)}% అదనపు దిగుబడి రక్షించబడుతుంది.` },
+          { title: '6. సులభమైన పొలం చిట్కాలు', body: `నీరు పెట్టే ముందు 3 అంగుళాల లోతు మట్టిని చేతిలో నొక్కి చూడండి. మట్టి ఉండ కడితే ఇంకా తేమ ఉంది, 2 రోజులు ఆగవచ్చు.` }
+        ] : [
+          { title: '1. Farm Profile', body: `District: ${distName}. Crop Stage: ${stageName}. Soil: ${soilName} — ${soil === 'black' ? 'holds moisture for 9–11 days.' : soil === 'red' ? 'drains quickly, so lighter frequent waterings work best.' : 'holds balanced moisture for 7–8 days.'}` },
+          { title: '2. 3-Day Rain Check', body: `Expected 3-day rain: ${rainMm} mm (${state.cycloneSimulated ? 'Cyclone Test Active' : state.weatherSource === 'live' ? 'Open-Meteo Live' : 'Offline Backup'}). Rain of 12 mm or more saves 1 full borewell watering.` },
+          { title: '3. Stage-by-Stage Water Plan', body: `Weeks 1–4 (Small Plants): ${split.s1}% • Weeks 5–10 ★ (Cob-Forming): ${split.s2}% • Weeks 11+ (Ripening): ${split.s3}%.` },
+          { title: '4. Borewell Savings', body: `Giving light watering between rows before 9 AM or after 5 PM cuts sun loss and pumping hours by 35–40%, making your borewell last longer.` },
+          { title: '5. Harvest Protection', body: `Saving water for cob-forming weeks protects ${optPct}% of your harvest compared to ${evenPct}% if you split water evenly (+${(optPct - evenPct).toFixed(1)}% extra harvest saved).` },
+          { title: '6. Simple Field Tips', body: `Before switching on the pump, squeeze soil from 3 inches deep in your hand. If it holds a damp shape, wait 2 more days before watering.` }
+        ];
+
+        const summarySpeech = isTe
+          ? `${distName} జిల్లా నీటి ప్రణాళిక. ${headline}. ఈరోజు చేయవలసినది: ${whatToDo} కారణం: ${whyProtects} రాబోయే 3 రోజుల్లో ${rainMm} mm వర్షం అంచనా ఉంది. దీనివల్ల ${optPct}% దిగుబడి రక్షించబడుతుంది.`
+          : `Water plan for ${distName}. ${headline}. What to do today: ${whatToDo} Why this protects your crop: ${whyProtects} 3-day rain forecast is ${rainMm} millimeters, with ${optPct} percent harvest protected.`;
+
+        state.currentPlan = {
+          dist,
+          distName,
+          soilName,
+          rainMm,
+          budgetMm,
+          split,
+          s1Count,
+          s2Count,
+          s3Count,
+          optPct,
+          rulePct,
+          evenPct,
+          earlyPct,
+          headline,
+          whatToDo,
+          whyProtects,
+          reportCards,
+          summarySpeech
+        };
+
+        renderStep2UI();
+        renderDetailedReportModal();
+        renderJudgesTabUI();
+      }
+
+      function renderStep2UI() {
+        const p = state.currentPlan;
+        if (!p) return;
+        const isTe = state.lang === 'te';
+
+        $('plan-district-title').textContent = p.distName;
+
+        const sourcePill = $('rain-source-pill');
+        if (sourcePill) {
+          if (state.cycloneSimulated) {
+            sourcePill.textContent = isTe ? '⛈️ తుఫాను అలర్ట్ (68 mm)' : '⛈️ Cyclone Alert (68 mm)';
+          } else if (state.weatherSource === 'live') {
+            sourcePill.textContent = isTe ? '📡 Open-Meteo లైవ్' : '📡 Open-Meteo Live';
+          } else {
+            sourcePill.textContent = isTe ? '💾 ఆఫ్‌లైన్ బ్యాకప్' : '💾 Offline Backup';
+          }
+        }
+
+        $('action-headline-text').textContent = p.headline;
+        $('what-to-do-body').textContent = p.whatToDo;
+        $('why-protects-body').textContent = p.whyProtects;
+
+        $('metric-rain-mm').textContent = `${p.rainMm} mm`;
+        const daysList = state.cycloneSimulated
+          ? [
+              { en: 'Today', te: 'ఈరోజు', mm: 18 },
+              { en: 'Tom', te: 'రేపు', mm: 34 },
+              { en: 'Day 3', te: '3వ రోజు', mm: 16 }
+            ]
+          : state.rainDaily;
+        $('metric-rain-days').textContent = daysList
+          .map((d) => `${isTe ? d.te : d.en} ${d.mm}mm`)
+          .join(' • ');
+
+        $('metric-harvest-pct').textContent = `${p.optPct}%`;
+        $('metric-harvest-bar').style.width = `${p.optPct}%`;
+
+        $('stage1-share').textContent = `${p.split.s1}%`;
+        $('stage2-share').textContent = `${p.split.s2}%`;
+        $('stage3-share').textContent = `${p.split.s3}%`;
+
+        $('stage1-dose').textContent = isTe
+          ? `${p.s1Count} తేలికపాటి తడి`
+          : `${p.s1Count} Light Watering`;
+        $('stage2-dose').textContent = isTe
+          ? `${p.s2Count} తడులు`
+          : `${p.s2Count} Waterings`;
+        $('stage3-dose').textContent = isTe
+          ? `${p.s3Count} తడి`
+          : `${p.s3Count} Watering`;
+
+        $('stage1-note').textContent = isTe
+          ? 'బలమైన వేర్లు ఏర్పడటానికి తక్కువ తేమ సరిపోతుంది.'
+          : 'Light moisture helps small plants grow deeper, stronger roots.';
+        $('stage2-note').textContent = isTe
+          ? 'అత్యంత కీలక దశ! కంకి నిండుగా గింజలు పడటానికి గరిష్ట నీరు ఇక్కడ వాడండి.'
+          : 'Most important stage! Save most of your water here for full cobs.';
+        $('stage3-note').textContent = isTe
+          ? 'గింజ బరువు పెరగడానికి ఒక తడి ఇచ్చి కోతకు ముందు ఆపండి.'
+          : 'Helps grains fill out, then stop watering before harvest.';
+      }
+
+      function renderDetailedReportModal() {
+        const p = state.currentPlan;
+        const grid = $('detailed-report-grid');
+        if (!p || !grid) return;
+        grid.innerHTML = '';
+
+        p.reportCards.forEach((card) => {
+          const el = document.createElement('div');
+          el.className = 'pop-card p-4 rounded-2xl bg-stone-50 dark:bg-slate-800 border border-stone-200 dark:border-slate-700';
+          el.innerHTML = `
+            <h4 class="text-xs sm:text-sm font-extrabold text-[#14532d] dark:text-emerald-300 mb-1.5">${card.title}</h4>
+            <p class="text-xs text-slate-700 dark:text-slate-200 leading-relaxed">${card.body}</p>
+          `;
+          grid.appendChild(el);
+        });
+      }
+
+      // =========================================================================
+      // 9. JUDGES TAB LIVE CONTEXT BANNER + BENCHMARK + 4-BAR CHART
+      // =========================================================================
+      function renderJudgesTabUI() {
+        const p = state.currentPlan;
+        if (!p) return;
+        const d = p.dist;
+        const isTe = state.lang === 'te';
+
+        const liveBanner = $('judge-live-context-banner');
+        if (liveBanner) {
+          liveBanner.textContent = isTe
+            ? `ప్రస్తుత విశ్లేషణ: ${d.te} • ${p.soilName} • ${state.tankPct}% ట్యాంక్`
+            : `Currently Evaluating: ${d.en} • ${p.soilName} • ${state.tankPct}% Tank`;
+        }
+
+        $('judge-benchmark-heading').textContent = isTe
+          ? `${d.te} మొక్కజొన్న బెంచ్‌మార్క్`
+          : `${d.en} Maize Benchmark`;
+
+        $('judge-district-type-pill').textContent = d.major
+          ? (isTe ? '★ ప్రధాన మొక్కజొన్న' : '★ Major Maize')
+          : (isTe ? 'తెలంగాణ జిల్లా' : 'Telangana District');
+
+        const mean = ((d.yLow + d.yHigh) / 2).toFixed(1);
+        $('judge-yield-range').textContent = `${d.yLow.toFixed(1)} – ${d.yHigh.toFixed(1)} t/ha`;
+        $('judge-yield-mean').textContent = isTe
+          ? `సగటు: ${mean} t/ha (90% ప్రిడిక్షన్ ఇంటర్వల్)`
+          : `Mean: ${mean} t/ha (90% Prediction Interval)`;
+
+        $('judge-rain-normal').textContent = `${d.rain} mm`;
+        $('judge-zone-label').textContent = isTe ? d.zoneTe : d.zoneEn;
+
+        $('chart-budget-pill').textContent = isTe
+          ? `${state.tankPct}% ట్యాంక్`
+          : `${state.tankPct}% Tank`;
+
+        $('vbar-label-early').textContent = `${p.earlyPct}%`;
+        $('vbar-fill-early').style.height = `${p.earlyPct}%`;
+
+        $('vbar-label-even').textContent = `${p.evenPct}%`;
+        $('vbar-fill-even').style.height = `${p.evenPct}%`;
+
+        $('vbar-label-rule').textContent = `${p.rulePct}%`;
+        $('vbar-fill-rule').style.height = `${p.rulePct}%`;
+
+        $('vbar-label-optimal').textContent = `${p.optPct}%`;
+        $('vbar-fill-optimal').style.height = `${p.optPct}%`;
+
+        const suffix = isTe ? '% దిగుబడి రక్షణ' : '% Yield Protected';
+        $('val-sched-early').textContent = `${p.earlyPct}${suffix}`;
+        $('bar-sched-early').style.width = `${p.earlyPct}%`;
+
+        $('val-sched-even').textContent = `${p.evenPct}${suffix}`;
+        $('bar-sched-even').style.width = `${p.evenPct}%`;
+
+        $('val-sched-rule').textContent = `${p.rulePct}${suffix}`;
+        $('bar-sched-rule').style.width = `${p.rulePct}%`;
+
+        $('val-sched-optimal').textContent = `${p.optPct}${suffix}`;
+        $('bar-sched-optimal').style.width = `${p.optPct}%`;
+
+        const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.en;
+        const optTitleEl = document.querySelector('[data-i18n="schedOptimal"]');
+        if (optTitleEl) {
+          optTitleEl.textContent = `${dict.schedOptimal} (${p.split.s1}% / ${p.split.s2}% / ${p.split.s3}%)`;
+        }
+      }
+
+      // =========================================================================
+      // 10. CONTINUOUS BILINGUAL VOICE RECOGNITION (PHONETIC ALIAS MATCHING)
+      // =========================================================================
+      let activeRecognition = null;
+      let isListeningActive = false;
+      let accumulatedTranscript = '';
+
+      function normalizePhoneticSpeech(raw) {
+        return (raw || '')
+          .toLowerCase()
+          .replace(/[.,!?'"()]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+
+      // Normalize spoken English, Telugu-script English, native Telugu numbers, and homophones safely
+      function normalizeSpokenNumbersAndUnits(raw) {
+        let s = String(raw || '');
+
+        // 1. Multi-word numbers first (Unicode-safe boundaries so Telugu matras stay intact)
+        const multiWordNumbers = [
+          [/\bseventy[\s-]+five\b/gi, '75'],
+          [/\btwenty[\s-]+five\b/gi, '25'],
+          [/\bfifty[\s-]+five\b/gi, '55'],
+          [/\bthirty[\s-]+five\b/gi, '35'],
+          [/\bforty[\s-]+five\b/gi, '45'],
+          [/\bsixty[\s-]+five\b/gi, '65'],
+          [/\beighty[\s-]+five\b/gi, '85'],
+          [/\bninety[\s-]+five\b/gi, '95'],
+          [/(^|[^\u0C00-\u0C7F])సెవెంటీ\s*ఫైవ్(?=[^\u0C00-\u0C7F]|$)/g, '75'],
+          [/(^|[^\u0C00-\u0C7F])ట్వంటీ\s*ఫైవ్(?=[^\u0C00-\u0C7F]|$)/g, '25'],
+          [/(^|[^\u0C00-\u0C7F])డెబ్బై\s+ఐదు(?=[^\u0C00-\u0C7F]|$)/g, '75'],
+          [/(^|[^\u0C00-\u0C7F])ఇరవై\s+ఐదు(?=[^\u0C00-\u0C7F]|$)/g, '25']
+        ];
+
+        for (const [pattern, replacement] of multiWordNumbers) {
+          s = s.replace(pattern, (match, prefix) => {
+            return typeof prefix === 'string' ? prefix + replacement : replacement;
+          });
+        }
+
+        // 2. Spoken homophones before time units (e.g., "to weeks" -> "2 weeks", "for weeks" -> "4 weeks")
+        s = s.replace(/\b(?:to|too|tu)\s+(weeks?|wks?|days?|months?)\b/gi, '2 $1');
+        s = s.replace(/\bfor\s+(weeks?|wks?|days?|months?)\b/gi, '4 $1');
+        s = s.replace(/\bwon\s+(weeks?|wks?|days?|months?)\b/gi, '1 $1');
+        s = s.replace(/\btree\s+(weeks?|wks?|days?|months?)\b/gi, '3 $1');
+        s = s.replace(/\bate\s+(weeks?|wks?|days?|months?)\b/gi, '8 $1');
+
+        // 3. Single-word English numbers
+        const englishNumbers = [
+          [/\bone\b/gi, '1'],
+          [/\btwo\b/gi, '2'],
+          [/\bthree\b/gi, '3'],
+          [/\bfour\b/gi, '4'],
+          [/\bfive\b/gi, '5'],
+          [/\bsix\b/gi, '6'],
+          [/\bseven\b/gi, '7'],
+          [/\beight\b/gi, '8'],
+          [/\bnine\b/gi, '9'],
+          [/\bten\b/gi, '10'],
+          [/\beleven\b/gi, '11'],
+          [/\btwelve\b/gi, '12'],
+          [/\bthirteen\b/gi, '13'],
+          [/\bfourteen\b/gi, '14'],
+          [/\bfifteen\b/gi, '15'],
+          [/\bsixteen\b/gi, '16'],
+          [/\bseventeen\b/gi, '17'],
+          [/\beighteen\b/gi, '18'],
+          [/\bnineteen\b/gi, '19'],
+          [/\btwenty\b/gi, '20'],
+          [/\bthirty\b/gi, '30'],
+          [/\bforty\b/gi, '40'],
+          [/\bfifty\b/gi, '50'],
+          [/\bsixty\b/gi, '60'],
+          [/\bseventy\b/gi, '70'],
+          [/\beighty\b/gi, '80'],
+          [/\bninety\b/gi, '90'],
+          [/\bhundred\b/gi, '100']
+        ];
+
+        for (const [pattern, replacement] of englishNumbers) {
+          s = s.replace(pattern, replacement);
+        }
+
+        // 4. Telugu-script English phonetic numbers & native Telugu number words (Unicode-safe boundaries)
+        const teluguNumbers = [
+          ['వన్', '1'],
+          ['టూ', '2'],
+          ['త్రీ', '3'],
+          ['ఫోర్', '4'],
+          ['ఫైవ్', '5'],
+          ['సిక్స్', '6'],
+          ['సెవెన్', '7'],
+          ['ఎయిట్', '8'],
+          ['నైన్', '9'],
+          ['టెన్', '10'],
+          ['లెవెన్', '11'],
+          ['ఎలెవెన్', '11'],
+          ['ట్వెల్వ్', '12'],
+          ['ఫిఫ్టీన్', '15'],
+          ['ట్వంటీ', '20'],
+          ['థర్టీ', '30'],
+          ['ఫోర్టీ', '40'],
+          ['ఫార్టీ', '40'],
+          ['ఫిఫ్టీ', '50'],
+          ['సిక్స్టీ', '60'],
+          ['సెవెంటీ', '70'],
+          ['ఎయిటీ', '80'],
+          ['నైనటీ', '90'],
+          ['నైంటీ', '90'],
+          ['హండ్రెడ్', '100'],
+          ['ఒకటి', '1'],
+          ['ఒక', '1'],
+          ['రెండు', '2'],
+          ['మూడు', '3'],
+          ['నాలుగు', '4'],
+          ['ఐదు', '5'],
+          ['ఆరు', '6'],
+          ['ఏడు', '7'],
+          ['ఎనిమిది', '8'],
+          ['తొమ్మిది', '9'],
+          ['పదిహేను', '15'],
+          ['పది', '10'],
+          ['ఇరవై', '20'],
+          ['ముప్పై', '30'],
+          ['నలభై', '40'],
+          ['యాభై', '50'],
+          ['అరవై', '60'],
+          ['డెబ్బై', '70'],
+          ['ఎనభై', '80'],
+          ['తొంభై', '90'],
+          ['వంద', '100']
+        ];
+
+        for (const [word, digit] of teluguNumbers) {
+          const rx = new RegExp(`(^|[^\\u0C00-\\u0C7F])${word}(?=[^\\u0C00-\\u0C7F]|$)`, 'g');
+          s = s.replace(rx, (_, prefix) => prefix + digit);
+        }
+
+        // 5. Telugu-script English time & percentage units -> English units (Unicode-safe)
+        const teluguUnits = [
+          ['వీక్స్', 'weeks'],
+          ['వీక్', 'week'],
+          ['డేస్', 'days'],
+          ['డే', 'day'],
+          ['మంత్స్', 'months'],
+          ['మంత్', 'month'],
+          ['పర్సెంట్', 'percent']
+        ];
+
+        for (const [teUnit, enUnit] of teluguUnits) {
+          const rx = new RegExp(`(^|[^\\u0C00-\\u0C7F])${teUnit}(?=[^\\u0C00-\\u0C7F]|$)`, 'g');
+          s = s.replace(rx, (_, prefix) => prefix + enUnit);
+        }
+
+        return s.replace(/\s+/g, ' ').trim();
+      }
+
+      function parseSpokenFarmDetails(rawTranscript) {
+        const text = normalizeSpokenNumbersAndUnits(normalizePhoneticSpeech(rawTranscript));
+        const compact = text.replace(/\s+/g, '');
+        const changes = [];
+        const isTe = state.lang === 'te';
+
+        // 1. Check Outside Telangana cities first
+        let matchedOutside = false;
+        for (const city of OUTSIDE_CITIES) {
+          if (text.includes(city)) {
+            matchedOutside = true;
+            break;
+          }
+        }
+
+        if (matchedOutside) {
+          $('outside-telangana-alert')?.classList.remove('hidden');
+          state.districtId = 'rangareddy';
+          $('district-dropdown').value = 'rangareddy';
+          updateUrbanNote();
+          changes.push(isTe ? 'ప్రాంతం (తెలంగాణ వెలుపల)' : 'Location (Outside Telangana)');
+        } else {
+          let foundDistId = null;
+          for (const [alias, dId] of Object.entries(LOCATION_ALIASES)) {
+            const aliasClean = normalizePhoneticSpeech(alias);
+            const aliasCompact = aliasClean.replace(/\s+/g, '');
+            if (text.includes(aliasClean) || (aliasCompact.length >= 5 && compact.includes(aliasCompact))) {
+              foundDistId = dId;
+              break;
+            }
+          }
+          if (!foundDistId) {
+            for (const d of DISTRICTS) {
+              const enLow = d.en.toLowerCase();
+              if (text.includes(enLow) || compact.includes(enLow.replace(/\s+/g, '')) || text.includes(d.te)) {
+                foundDistId = d.id;
+                break;
+              }
+            }
+          }
+
+          if (foundDistId) {
+            $('outside-telangana-alert')?.classList.add('hidden');
+            state.districtId = foundDistId;
+            $('district-dropdown').value = foundDistId;
+            updateUrbanNote();
+            const dObj = DISTRICTS.find((x) => x.id === foundDistId);
+            changes.push(isTe ? `జిల్లా: ${dObj.te}` : `District: ${dObj.en}`);
+          }
+        }
+
+        // 2. Flexible Crop Age (Unicode-safe patterns for EN, TE, and reversed Telugu order)
+        let parsedAge = null;
+        let tankSearchText = text;
+
+        const rangeMatch = text.match(/(\d+)\s*(?:to|-|–|నుండి)\s*(\d+)\s*(?:weeks?|wks?|వారాలు|వారాల|వారం)(?=[^\u0C00-\u0C7F]|$)/i);
+        const monthsMatch = text.match(/(\d+)\s*(?:months?|నెలలు|నెలల|నెల)(?=[^\u0C00-\u0C7F]|$)/i);
+        const weeksMatch = text.match(/(\d+)\s*(?:weeks?|wks?|వారాలు|వారాల|వారం)(?=[^\u0C00-\u0C7F]|$)/i);
+        const revWeeksMatch = text.match(/(?:^|[^\u0C00-\u0C7F])(?:weeks?|wks?|వారాలు|వారాల|వారం)\s*(\d+)/i);
+        const daysMatch = text.match(/(\d+)\s*(?:days?|రోజులు|రోజుల|రోజు)(?=[^\u0C00-\u0C7F]|$)/i);
+        const revDaysMatch = text.match(/(?:^|[^\u0C00-\u0C7F])(?:days?|రోజులు|రోజుల|రోజు)\s*(\d+)/i);
+
+        if (rangeMatch) {
+          const w = parseInt(rangeMatch[1], 10);
+          parsedAge = w <= 4 ? 'young' : w <= 10 ? 'tassel' : 'cobfill';
+          tankSearchText = tankSearchText.replace(rangeMatch[0], ' ');
+        } else if (monthsMatch) {
+          const m = parseInt(monthsMatch[1], 10);
+          parsedAge = m <= 1 ? 'young' : m === 2 ? 'tassel' : 'cobfill';
+          tankSearchText = tankSearchText.replace(monthsMatch[0], ' ');
+        } else if (weeksMatch) {
+          const w = parseInt(weeksMatch[1], 10);
+          parsedAge = w <= 4 ? 'young' : w <= 10 ? 'tassel' : 'cobfill';
+          tankSearchText = tankSearchText.replace(weeksMatch[0], ' ');
+        } else if (revWeeksMatch) {
+          const w = parseInt(revWeeksMatch[1], 10);
+          parsedAge = w <= 4 ? 'young' : w <= 10 ? 'tassel' : 'cobfill';
+          tankSearchText = tankSearchText.replace(revWeeksMatch[0], ' ');
+        } else if (daysMatch) {
+          const d = parseInt(daysMatch[1], 10);
+          parsedAge = d <= 28 ? 'young' : d <= 70 ? 'tassel' : 'cobfill';
+          tankSearchText = tankSearchText.replace(daysMatch[0], ' ');
+        } else if (revDaysMatch) {
+          const d = parseInt(revDaysMatch[1], 10);
+          parsedAge = d <= 28 ? 'young' : d <= 70 ? 'tassel' : 'cobfill';
+          tankSearchText = tankSearchText.replace(revDaysMatch[0], ' ');
+        } else if (/few days|just planted|newly|young|small|చిన్న|కొన్ని రోజులు|మొలక/.test(text)) {
+          parsedAge = 'young';
+        } else if (/tassel|cob|flower|silk|పూత|కంకి/.test(text)) {
+          parsedAge = 'tassel';
+        } else if (/ripen|grain|harvest|గింజ|కోత/.test(text)) {
+          parsedAge = 'cobfill';
+        }
+
+        // Standalone numbers (1–16 as weeks, 17–120 as days) when not tied to water/percent cues
+        if (!parsedAge) {
+          const hasWaterOrPercentCue = /\b(?:percent|water|tank)\b|%|శాతం|నీరు|నీళ్లు|బోరు|ట్యాంక్/i.test(tankSearchText);
+          const standaloneMatch = tankSearchText.match(/(?:^|\s)(\d{1,3})(?!\s*(?:%|percent|శాతం))(?=\s|$)/i);
+          if (standaloneMatch && !hasWaterOrPercentCue) {
+            const num = parseInt(standaloneMatch[1], 10);
+            if (num >= 1 && num <= 16) {
+              parsedAge = num <= 4 ? 'young' : num <= 10 ? 'tassel' : 'cobfill';
+              tankSearchText = tankSearchText.replace(standaloneMatch[0], ' ');
+            } else if (num >= 17 && num <= 120) {
+              parsedAge = num <= 28 ? 'young' : num <= 70 ? 'tassel' : 'cobfill';
+              tankSearchText = tankSearchText.replace(standaloneMatch[0], ' ');
+            }
+          }
+        }
+
+        if (parsedAge) {
+          state.cropAge = parsedAge;
+          const ageDropdown = $('crop-age-dropdown');
+          if (ageDropdown) ageDropdown.value = parsedAge;
+          recomputeAndRenderPlan();
+          changes.push(isTe ? 'పంట వయస్సు' : 'Crop Age');
+        }
+
+        // 3. Soil Type (English, Telugu, and Telugu-script English)
+        let parsedSoil = null;
+        if (/mixed|loam|dubba|మిక్స్డ్ సాయిల్|మిక్స్డ్|మిశ్రమ|దుబ్బ/.test(text)) {
+          parsedSoil = 'mixed';
+        } else if (/red|chalka|రెడ్ సాయిల్|రెడ్|ఎర్ర|చల్కా/.test(text)) {
+          parsedSoil = 'red';
+        } else if (/black|regadi|బ్లాక్ సాయిల్|బ్లాక్|నల్ల|రేగడి/.test(text)) {
+          parsedSoil = 'black';
+        }
+
+        if (parsedSoil) {
+          state.soil = parsedSoil;
+          syncSoilSelectionUI(true);
+          changes.push(isTe ? 'నేల రకం' : 'Soil Type');
+        }
+
+        // 4. Borewell Tank % (Checked against tankSearchText so age numbers never collide)
+        let parsedTank = null;
+        if (/(?:^|\s)25(?:\s*(?:%|percent|శాతం))?(?=\s|$)|quarter|low|పావు|తక్కువ/i.test(tankSearchText)) {
+          parsedTank = 25;
+        } else if (/(?:^|\s)50(?:\s*(?:%|percent|శాతం))?(?=\s|$)|half|medium|సగం|మధ్యస్థం/i.test(tankSearchText)) {
+          parsedTank = 50;
+        } else if (/(?:^|\s)75(?:\s*(?:%|percent|శాతం))?(?=\s|$)|good|ముప్పావు|మంచి/i.test(tankSearchText)) {
+          parsedTank = 75;
+        } else if (/(?:^|\s)100(?:\s*(?:%|percent|శాతం))?(?=\s|$)|full|నిండు|పూర్తి/i.test(tankSearchText)) {
+          parsedTank = 100;
+        }
+
+        if (parsedTank !== null) {
+          state.tankPct = parsedTank;
+          syncTankSelectionUI();
+          changes.push(isTe ? `బోరు నీరు: ${parsedTank}%` : `Tank: ${parsedTank}%`);
+        }
+
+        return changes;
+      }
+
+      function applySpokenResult(spoken, targetMode) {
+        const isTe = state.lang === 'te';
+        if (targetMode === 'details') {
+          const updated = parseSpokenFarmDetails(spoken);
+          const fBox = $('voice-feedback-box');
+          if (fBox) fBox.classList.remove('hidden');
+          if (updated.length > 0) {
+            $('voice-feedback-title').textContent = isTe ? '✅ వివరాలు నవీకరించబడ్డాయి!' : '✅ Farm Details Updated!';
+            $('voice-feedback-detail').textContent = `"${spoken}" → ${updated.join(', ')}`;
+            const dist = DISTRICTS.find((d) => d.id === state.districtId) || DISTRICTS[31];
+            fetch3DayRain(dist).then(() => recomputeAndRenderPlan());
+          } else {
+            $('voice-feedback-title').textContent = isTe ? '🤔 మళ్ళీ చెప్పగలరా?' : '🤔 Could not match details — try again';
+            $('voice-feedback-detail').textContent = isTe
+              ? `"${spoken}" అర్థం కాలేదు. జిల్లా, వారాలు, నేల, నీటి శాతం చెప్పండి.`
+              : `Heard "${spoken}" — mention district/town, weeks/days, soil, or tank %.`;
+          }
+        } else {
+          $('chat-voice-banner')?.classList.add('hidden');
+          const input = $('chat-text-input');
+          if (input) input.value = spoken;
+          handleAskAI(spoken);
+        }
+      }
+
+      function stopActiveRecognition() {
+        isListeningActive = false;
+        $('speak-details-btn')?.classList.remove('mic-active');
+        $('chat-voice-btn')?.classList.remove('mic-active');
+        $('stop-listening-btn')?.classList.add('hidden');
+        const label = $('speak-details-label');
+        if (label) {
+          label.textContent = (TRANSLATIONS[state.lang] || TRANSLATIONS.en).speakDetailsBtn;
+        }
+        if (activeRecognition) {
+          try {
+            activeRecognition.stop();
+          } catch (e) {
+            // Safe stop
+          }
+          activeRecognition = null;
+        }
+      }
+
+      function triggerSpeechInput(targetMode) {
+        const isTe = state.lang === 'te';
+
+        if (isListeningActive) {
+          const finalCaptured = accumulatedTranscript.trim();
+          accumulatedTranscript = '';
+          stopActiveRecognition();
+          if (finalCaptured) {
+            applySpokenResult(finalCaptured, targetMode);
+          }
+          return;
+        }
+
+        AudioPlayer.stop();
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRec) {
+          if (targetMode === 'details') {
+            $('voice-feedback-box')?.classList.remove('hidden');
+            $('sandbox-voice-fallback')?.classList.remove('hidden');
+            $('voice-feedback-title').textContent = isTe ? '🎙️ వాయిస్ పార్సర్ పరీక్ష' : '🎙️ Voice Parser Test Mode';
+            $('voice-feedback-detail').textContent = isTe
+              ? 'ఈ బ్రౌజర్‌లో మైక్ API లేదు — క్రింద టైప్ చేయండి లేదా నొక్కండి.'
+              : 'Speech API unavailable in this browser — type or tap a sample phrase below.';
+          } else {
+            const cBanner = $('chat-voice-banner');
+            if (cBanner) {
+              cBanner.classList.remove('hidden');
+              cBanner.textContent = isTe ? 'వాయిస్ అందుబాటులో లేదు — దయచేసి టైప్ చేయండి.' : 'Voice input unsupported in this browser — please type your question.';
+            }
+          }
+          return;
+        }
+
+        const recognition = new SpeechRec();
+        activeRecognition = recognition;
+        isListeningActive = true;
+        accumulatedTranscript = '';
+
+        recognition.lang = isTe ? 'te-IN' : 'en-IN';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        const detailsBtn = $('speak-details-btn');
+        const chatBtn = $('chat-voice-btn');
+        const fBox = $('voice-feedback-box');
+        const cBanner = $('chat-voice-banner');
+
+        if (targetMode === 'details') {
+          detailsBtn?.classList.add('mic-active');
+          $('stop-listening-btn')?.classList.remove('hidden');
+          const lbl = $('speak-details-label');
+          if (lbl) lbl.textContent = isTe ? 'వింటోంది... ఆపండి' : 'Listening... Done';
+          if (fBox) {
+            fBox.classList.remove('hidden');
+            $('sandbox-voice-fallback')?.classList.add('hidden');
+            $('voice-feedback-title').textContent = isTe ? '🎙️ మాట్లాడండి (పూర్తయ్యాక Done నొక్కండి)...' : '🎙️ Listening — Speak your full sentence...';
+            $('voice-feedback-detail').textContent = isTe
+              ? 'ఉదా: "దమ్మాయిగూడ, 6 వారాలు, మిక్స్డ్ నేల, 50% నీరు"'
+              : 'Example: "Dammaiguda, 6 weeks, mixed soil, 50 percent water"';
+          }
+        } else {
+          chatBtn?.classList.add('mic-active');
+          if (cBanner) {
+            cBanner.classList.remove('hidden');
+            cBanner.textContent = isTe ? '🎙️ వింటోంది... మీ ప్రశ్న అడగండి' : '🎙️ Listening... Ask your question';
+          }
+        }
+
+        recognition.onresult = (event) => {
+          let finalPart = '';
+          let interimPart = '';
+          for (let i = 0; i < event.results.length; i++) {
+            const res = event.results[i];
+            if (res.isFinal) {
+              finalPart += ' ' + res[0].transcript;
+            } else {
+              interimPart += ' ' + res[0].transcript;
+            }
+          }
+          accumulatedTranscript = (finalPart + ' ' + interimPart).trim();
+
+          if (targetMode === 'details' && accumulatedTranscript) {
+            $('voice-feedback-detail').textContent = `🗣️ "${accumulatedTranscript}"`;
+            parseSpokenFarmDetails(accumulatedTranscript);
+          } else if (targetMode === 'chat' && accumulatedTranscript && cBanner) {
+            cBanner.textContent = `🗣️ "${accumulatedTranscript}"`;
+          }
+        };
+
+        recognition.onerror = (event) => {
+          const errCode = event?.error || '';
+          if (errCode === 'no-speech') return;
+
+          accumulatedTranscript = '';
+          stopActiveRecognition();
+          if (targetMode === 'details' && fBox) {
+            fBox.classList.remove('hidden');
+            $('sandbox-voice-fallback')?.classList.remove('hidden');
+            $('voice-feedback-title').textContent = isTe ? '🎙️ శాండ్‌బాక్స్ / మైక్ పరిమితి' : '🎙️ Mic Blocked by Preview Sandbox';
+            $('voice-feedback-detail').textContent = isTe
+              ? 'ప్రివ్యూ బాక్స్‌లో మైక్ అనుమతి ఆపబడింది. క్రింది నమూనా వాక్యాలను నొక్కి పరీక్షించండి (Chrome లో నేరుగా తెరిస్తే లైవ్ మైక్ పనిచేస్తుంది).'
+              : 'Browser iframe blocked microphone hardware. Use the quick test phrases below (live mic works automatically when opened directly in Chrome).';
+          } else if (cBanner) {
+            cBanner.classList.remove('hidden');
+            cBanner.textContent = isTe ? 'మైక్ అనుమతి నిరోధించబడింది — దయచేసి క్రింద టైప్ చేయండి.' : 'Mic blocked in preview iframe — type your question below.';
+          }
+        };
+
+        recognition.onend = () => {
+          if (isListeningActive && targetMode === 'details') {
+            try {
+              recognition.start();
+              return;
+            } catch (e) {
+              // Fall through
+            }
+          }
+          const captured = accumulatedTranscript.trim();
+          accumulatedTranscript = '';
+          stopActiveRecognition();
+          if (captured) {
+            applySpokenResult(captured, targetMode);
+          }
+        };
+
+        try {
+          recognition.start();
+        } catch (err) {
+          accumulatedTranscript = '';
+          stopActiveRecognition();
+          if (targetMode === 'details') {
+            $('voice-feedback-box')?.classList.remove('hidden');
+            $('sandbox-voice-fallback')?.classList.remove('hidden');
+          }
+        }
+      }
+
+      // =========================================================================
+      // 11. CONVERSATIONAL FARM & CROP AI CHAT (DISTINCT PRACTICAL ANSWERS)
+      // =========================================================================
+      function addChatBubble(role, text, sections) {
+        const box = $('chat-history-box');
+        if (!box) return;
+
+        const row = document.createElement('div');
+        row.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
+
+        const card = document.createElement('div');
+        card.className = role === 'user'
+          ? 'pop-tile max-w-[85%] rounded-2xl rounded-br-sm px-4 py-2.5 bg-[#166534] dark:bg-[#133a27] border border-transparent dark:border-emerald-400 text-white text-xs sm:text-sm font-semibold shadow-sm'
+          : 'pop-tile max-w-[92%] rounded-2xl rounded-bl-sm px-4 py-3 bg-white dark:bg-slate-800 border border-stone-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs sm:text-sm shadow-sm space-y-2';
+
+        if (Array.isArray(sections) && sections.length > 0) {
+          sections.forEach((sec) => {
+            const item = document.createElement('div');
+            item.innerHTML = `<span class="font-extrabold text-[#14532d] dark:text-emerald-300">${sec.label}:</span> <span>${sec.text}</span>`;
+            card.appendChild(item);
+          });
+        } else {
+          card.textContent = text;
+        }
+
+        row.appendChild(card);
+        box.appendChild(row);
+        box.scrollTop = box.scrollHeight;
+      }
+
+      function resetChatGreeting() {
+        const box = $('chat-history-box');
+        if (!box) return;
+        box.innerHTML = '';
+        const msg = state.lang === 'te'
+          ? 'నమస్కారం! మీ పొలం మట్టి తేమ, ఎరువులు వేసే సమయం, బోరు నీరు లేదా వర్షం గురించి ఏదైనా సందేహం ఉంటే అడగండి.'
+          : 'Namaste! Ask anything about your farm—like checking soil moisture by hand, best pumping time, fertilizer timing, or heavy rain drainage.';
+        addChatBubble('ai', msg);
+      }
+
+      function buildContextOfflineResponse(question) {
+        const q = question.toLowerCase().trim();
+        const p = state.currentPlan;
+        const isTe = state.lang === 'te';
+
+        if (!p) return { plain: 'Click Check My Water Plan first.' };
+
+        // 1. Friendly Greetings
+        if (/^(hi|hello|hey|namaste|namaskaram|good morning|good afternoon|good evening|హలో|నమస్తే|నమస్కారం)[!.\s]*$/i.test(q)) {
+          return {
+            plain: isTe
+              ? `నమస్కారం! మీ ${p.distName} పొలం (${p.soilName}, ${state.tankPct}% బోరు నీరు) గురించి నేను ఎలా సహాయం చేయగలను?`
+              : `Hello! How can I help with your ${p.distName} maize farm (${p.soilName}, ${state.tankPct}% borewell water)?`
+          };
+        }
+
+        // 2. Hand Soil Moisture Check
+        if (/hand|moisture|squeeze|check soil|test soil|మట్టి|తేమ|చేతితో/.test(q)) {
+          const soilTip = state.soil === 'black'
+            ? (isTe ? 'మీ నల్ల నేల 9–11 రోజులు తేమ ఉంచుతుంది; మట్టి ఉండ కడితే ఇంకా 2–3 రోజులు నీరు అవసరం లేదు.' : 'Your Black Soil holds water for 9–11 days; if a 3-inch soil ball stays together without crumbling, wait 2–3 more days.')
+            : state.soil === 'red'
+              ? (isTe ? 'మీ ఎర్ర నేల త్వరగా ఆరిపోతుంది; 3 అంగుళాల లోతు మట్టి పొడిగా మారితే తేలికపాటి తడి ఇవ్వండి.' : 'Your Red Soil dries faster (5–6 days); if soil 3 inches deep crumbles dry in your palm, give a light watering.')
+              : (isTe ? 'మీ మిశ్రమ నేలలో 3 అంగుళాల లోతు మట్టిని నొక్కి చూడండి—తేమగా ఉంటే 2 రోజులు ఆగవచ్చు.' : 'On your Mixed Soil, squeeze soil from 3 inches deep—if it feels cool and holds a loose ball, wait 2 days before pumping.');
+          return {
+            sections: isTe ? [
+              { label: 'చేతితో మట్టి పరీక్ష', text: 'పొలంలో మొక్కల వరుసల మధ్య 3 అంగుళాల లోతు నుండి కొద్దిగా మట్టి తీసి పిడికిలిలో నొక్కండి.' },
+              { label: `${p.soilName} సూచన`, text: soilTip }
+            ] : [
+              { label: '3-Inch Hand Squeeze Test', text: 'Dig 3 inches deep between two maize rows, grab a handful of root-zone soil, and squeeze it firmly.' },
+              { label: `${p.soilName} Tip`, text: soilTip }
+            ]
+          };
+        }
+
+        // 3. Best Time of Day to Pump
+        if (/time of day|morning|evening|afternoon|night|when to pump|సమయం|ఉదయం|సాయంత్రం/.test(q)) {
+          return {
+            sections: isTe ? [
+              { label: 'ఉత్తమ సమయం', text: 'ఉదయం 6:00 నుండి 9:00 గంటల లోపు లేదా సాయంత్రం 5:00 గంటల తర్వాత బోరు వేయండి.' },
+              { label: 'ఎందుకు?', text: 'మధ్యాహ్నం ఎండలో నీరు పెడితే 30–35% నీరు ఆవిరైపోతుంది. చల్లని వేళల్లో వరుసల మధ్య నీరు పెట్టడం వల్ల మీ బోరు నీరు ఎక్కువ రోజులు వస్తుంది.' }
+            ] : [
+              { label: 'Best Pumping Window', text: 'Run your borewell early morning (6:00–9:00 AM) or late evening (after 5:00 PM).' },
+              { label: 'Water Saved', text: 'Midday heat evaporates up to 35% of pumped water before roots absorb it. Cool-hour watering stretches your ' + state.tankPct + '% borewell reserve much further.' }
+            ]
+          };
+        }
+
+        // 4. Fertilizer / Urea / Top-Dressing with Water
+        if (/fertilizer|urea|dap|potash|top dress|nutrient|ఎరువు|యూరియా/.test(q)) {
+          const stageFert = state.cropAge === 'young'
+            ? (isTe ? 'చిన్న మొక్కల దశలో (3–4 వారాలు) మొదటి యూరియా మోతాదును తేలికపాటి తడి లేదా వర్షం తర్వాత వేయండి.' : 'During Young Plants (Weeks 3–4), apply first nitrogen top-dressing right after light rain or a light watering.')
+            : state.cropAge === 'tassel'
+              ? (isTe ? 'కంకి ఏర్పడే 5–7 వారాల దశలో చివరి యూరియా & పొటాష్ వేసి వెంటనే తేలికపాటి నీరు పెట్టండి—అప్పుడే వేర్లు పూర్తిగా తీసుకుంటాయి.' : 'During Cob-Forming (Weeks 5–7), apply final nitrogen/potash top-dressing just before a scheduled watering so roots absorb nutrients quickly.')
+              : (isTe ? '11+ వారాల గింజ గట్టిపడే దశలో కొత్తగా యూరియా వేయవద్దు—ఇప్పుడు వేస్తే కోత ఆలస్యమవుతుంది.' : 'At Weeks 11+ (Ripening), avoid adding new nitrogen fertilizer as grains are already hardening.');
+          return {
+            sections: isTe ? [
+              { label: 'ఎరువుల సమయం', text: stageFert },
+              { label: 'ముఖ్య గమనిక', text: 'భారీ వర్షం (>30 mm) సూచన ఉంటే ఎరువులు వేయకండి, వర్షపు నీటిలో కొట్టుకుపోతాయి.' }
+            ] : [
+              { label: 'Fertilizer & Water Timing', text: stageFert },
+              { label: 'Rain Rule', text: `With ${p.rainMm} mm forecast in ${p.distName}, never broadcast fertilizer right before heavy rain (>30 mm) or it will wash away.` }
+            ]
+          };
+        }
+
+        // 5. Heavy Rain / Flood / Drainage
+        if (/rain|cyclone|heavy|flood|drain|వర్షం|తుఫాను|వరద/.test(q)) {
+          return {
+            sections: isTe ? [
+              { label: `${p.distName} వర్షపు పరిస్థితి`, text: `రాబోయే 3 రోజుల్లో ${p.rainMm} mm వర్షం అంచనా ఉంది. 30 mm కంటే ఎక్కువ వర్షం పడితే బోరు ఆపి పొలం గట్ల వద్ద నీరు బయటకు పోయే కాలువలు తెరవండి.` },
+              { label: 'వేర్ల ఆరోగ్యం', text: 'మొక్కజొన్న వేర్ల వద్ద 24 గంటల కంటే ఎక్కువ నీరు నిలిచి ఉంటే ఆకులు పసుపు రంగులోకి మారి దిగుబడి తగ్గుతుంది.' }
+            ] : [
+              { label: `${p.distName} Rain Status`, text: `3-day forecast is ${p.rainMm} mm. Whenever rain exceeds 30 mm, switch off the borewell and open shallow field drains at the lower slope.` },
+              { label: 'Why Drainage Matters', text: 'Maize roots suffocate if water stands for more than 24 hours, causing yellow leaves and lower cob weight.' }
+            ]
+          };
+        }
+
+        // 6. General Farm-Context Fallback (Tailored to user's actual farm inputs)
+        return {
+          sections: isTe ? [
+            { label: `${p.distName} పొలం స్థితి`, text: `మీ ${p.soilName} మరియు ${state.tankPct}% బోరు నీటి నిల్వ ప్రకారం, ఈరోజు: ${p.headline}.` },
+            { label: 'తదుపరి సూచన', text: `${p.whatToDo}` }
+          ] : [
+            { label: `${p.distName} Farm Guidance`, text: `Based on your ${p.soilName} and ${state.tankPct}% borewell water, today's priority is: ${p.headline}.` },
+            { label: 'Practical Step', text: `${p.whatToDo}` }
+          ]
+        };
+      }
+
+      async function handleAskAI(rawQuestion) {
+        const question = (rawQuestion || '').trim();
+        if (!question) return;
+
+        addChatBubble('user', question);
+        const input = $('chat-text-input');
+        if (input) input.value = '';
+
+        if (/^(hi|hello|hey|namaste|namaskaram|good morning|good afternoon|good evening|హలో|నమస్తే|నమస్కారం)[!.\s]*$/i.test(question)) {
+          const reply = buildContextOfflineResponse(question);
+          addChatBubble('ai', reply.plain);
+          return;
+        }
+
+        const apiKey = (localStorage.getItem('kharifshield_gemini_api_key') || '').trim();
+        if (!apiKey) {
+          const reply = buildContextOfflineResponse(question);
+          addChatBubble('ai', reply.plain || '', reply.sections);
+          return;
+        }
+
+        const p = state.currentPlan;
+        const models = ['gemini-2.0-flash-lite', 'gemini-1.5-flash'];
+        const prompt = `You are KharifShield AI, a practical maize farming assistant for Telangana farmers. Give a concise, direct answer about their farm without repeating the entire report. NEVER use jargon like furrow or evapotranspiration. Farm: District=${p.distName}, Stage=${state.cropAge}, Soil=${p.soilName}, Borewell=${state.tankPct}%, 3-day Rain=${p.rainMm}mm. Reply in ${state.lang === 'te' ? 'Telugu' : 'English'}. Question: ${question}`;
+
+        for (let i = 0; i < models.length; i++) {
+          try {
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${models[i]}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+              })
+            });
+            if (!resp.ok) continue;
+            const json = await resp.json();
+            const answer = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (answer) {
+              addChatBubble('ai', answer);
+              return;
+            }
+          } catch (e) {
+            // Try next model
+          }
+        }
+
+        const reply = buildContextOfflineResponse(question);
+        addChatBubble('ai', reply.plain || '', reply.sections);
+      }
+
+      // =========================================================================
+      // 12. INTERACTIVE GUIDE ME TOUR (STEP 1 -> STEP 2 -> AI CHATBOT)
+      // =========================================================================
+      const TOUR_STEPS = [
+        {
+          targetId: 'step1-section',
+          pillId: 'step1-active-pill',
+          enCounter: 'Step 1 / 2',
+          teCounter: 'Step 1 / 2',
+          enTitle: 'Step 1: Fill your farm details',
+          teTitle: 'Step 1: మీ పొలం వివరాలు నింపండి',
+          enBody: 'Select your district, crop age, soil type, and borewell water %, then tap Check My Water Plan.',
+          teBody: 'మీ జిల్లా, పంట వయస్సు, నేల రకం మరియు బోరు నీటి శాతం ఎంచుకుని, "నా నీటి ప్రణాళిక చూడండి" నొక్కండి.'
+        },
+        {
+          targetId: 'step2-section',
+          pillId: 'step2-ready-pill',
+          enCounter: 'Step 2 / 2',
+          teCounter: 'Step 2 / 2',
+          enTitle: 'Step 2: Your water plan is ready',
+          teTitle: 'Step 2: మీ నీటి ప్రణాళిక సిద్ధంగా ఉంది',
+          enBody: "Review today's watering action, 3-day rain forecast, or tap View Detailed Report.",
+          teBody: 'ఈరోజు నీటి నిర్ణయం, 3-రోజుల వర్షపు సూచన చూడండి లేదా "పూర్తి నివేదిక చూడండి" నొక్కండి.'
+        },
+        {
+          targetId: 'step3-section',
+          pillId: 'step3-active-pill',
+          enCounter: 'AI Chatbot',
+          teCounter: 'AI చాట్‌బాట్',
+          enTitle: 'AI Chatbot: Ask any farm question',
+          teTitle: 'AI చాట్‌బాట్: ఏదైనా పొలం ప్రశ్న అడగండి',
+          enBody: 'Type or use the microphone to ask about soil moisture, pumping time, or heavy rain.',
+          teBody: 'మట్టి తేమ, బోరు సమయం లేదా భారీ వర్షం గురించి టైప్ చేసి లేదా మైక్ ద్వారా అడగండి.'
+        }
+      ];
+
+      function clearTourFocus() {
+        document.querySelectorAll('.tour-focus-ring').forEach((el) => el.classList.remove('tour-focus-ring'));
+        $('step1-active-pill')?.classList.add('hidden');
+        $('step3-active-pill')?.classList.add('hidden');
+      }
+
+      function syncTourMinimizedUI() {
+        const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.en;
+        const bodyWrap = $('tour-body-wrapper');
+        const minTitle = $('tour-minimized-title');
+        const minBtn = $('tour-minimize-btn');
+        const card = $('guide-tour-card');
+        if (!card) return;
+
+        if (state.tourMinimized) {
+          bodyWrap?.classList.add('hidden');
+          minTitle?.classList.remove('hidden');
+          card.classList.remove('p-3', 'sm:p-4');
+          card.classList.add('py-2', 'px-3');
+          if (minBtn) minBtn.textContent = dict.tourExpandBtn;
+        } else {
+          bodyWrap?.classList.remove('hidden');
+          minTitle?.classList.add('hidden');
+          card.classList.remove('py-2', 'px-3');
+          card.classList.add('p-3', 'sm:p-4');
+          if (minBtn) minBtn.textContent = dict.tourMinimizeBtn;
+        }
+      }
+
+      function startOrAdvanceTour(stepIdx) {
+        if (stepIdx < 0 || stepIdx >= TOUR_STEPS.length) {
+          stopTour();
+          return;
+        }
+        state.tourIndex = stepIdx;
+        switchMainTab('farmer');
+        clearTourFocus();
+
+        const step = TOUR_STEPS[stepIdx];
+        const isTe = state.lang === 'te';
+        const target = $(step.targetId);
+        if (target) {
+          target.classList.add('tour-focus-ring');
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        if (step.pillId) {
+          $(step.pillId)?.classList.remove('hidden');
+        }
+
+        const card = $('guide-tour-card');
+        if (card) {
+          card.classList.remove('hidden');
+          if (state.tourMinimized) {
+            card.classList.remove('tour-minimized-pulse');
+            void card.offsetWidth;
+            card.classList.add('tour-minimized-pulse');
+          }
+        }
+        syncFloatingOverlayPositions();
+        syncTourMinimizedUI();
+
+        const counterText = isTe ? step.teCounter : step.enCounter;
+        const titleText = isTe ? step.teTitle : step.enTitle;
+        const bodyText = isTe ? step.teBody : step.enBody;
+
+        $('tour-step-counter').textContent = counterText;
+        $('tour-card-title').textContent = titleText;
+        $('tour-minimized-title').textContent = titleText;
+        $('tour-card-body').textContent = bodyText;
+
+        const contBtn = $('tour-continue-btn');
+        if (contBtn) {
+          contBtn.classList.remove('hidden');
+          contBtn.textContent = stepIdx === TOUR_STEPS.length - 1
+            ? (isTe ? 'పూర్తయింది ✓' : 'Finish ✓')
+            : (isTe ? 'కొనసాగించు →' : 'Continue →');
+        }
+
+        const speechText = `${titleText}. ${bodyText}`;
+        AudioPlayer.speak(speechText, isTe ? 'గైడ్ వాయిస్' : 'Guide Me Tour');
+      }
+
+      function stopTour() {
+        state.tourIndex = -1;
+        state.tourMinimized = false;
+        clearTourFocus();
+        $('guide-tour-card')?.classList.add('hidden');
+        AudioPlayer.stop();
+      }
+
+      // =========================================================================
+      // 13. TAB SWITCHER
+      // =========================================================================
+      function switchMainTab(tab) {
+        state.activeTab = tab;
+        const farmerView = $('view-farmer-app');
+        const judgesView = $('view-judges-tab');
+        const farmerBtn = $('nav-tab-farmer');
+        const judgesBtn = $('nav-tab-judges');
+
+        if (tab === 'farmer') {
+          farmerView?.classList.remove('hidden');
+          judgesView?.classList.add('hidden');
+          farmerBtn?.classList.add('active-nav-tab');
+          farmerBtn?.classList.remove('text-slate-600', 'dark:text-slate-300');
+          judgesBtn?.classList.remove('active-nav-tab');
+          judgesBtn?.classList.add('text-slate-600', 'dark:text-slate-300');
+        } else {
+          farmerView?.classList.add('hidden');
+          judgesView?.classList.remove('hidden');
+          judgesBtn?.classList.add('active-nav-tab');
+          judgesBtn?.classList.remove('text-slate-600', 'dark:text-slate-300');
+          farmerBtn?.classList.remove('active-nav-tab');
+          farmerBtn?.classList.add('text-slate-600', 'dark:text-slate-300');
+          renderJudgesTabUI();
+        }
+      }
+
+      // =========================================================================
+      // 14. INITIALIZATION
+      // =========================================================================
+      function initializeApp() {
+        setTimeout(() => {
+          const splash = $('opening-splash');
+          if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+        }, 1500);
+
+        if (localStorage.getItem('kharifshield_dark') === 'true') {
+          state.darkMode = true;
+          document.documentElement.classList.add('dark');
+          const icon = $('dark-mode-icon');
+          if (icon) icon.textContent = '☀️';
+        }
+
+        const existingKey = localStorage.getItem('kharifshield_gemini_api_key');
+        if (existingKey) {
+          const inp = $('gemini-api-input');
+          if (inp) inp.value = existingKey;
+          const badge = $('ai-status-badge');
+          if (badge) badge.setAttribute('data-i18n', 'aiLiveTag');
+        }
+
+        applyLanguageUI();
+
+        const initialDistrict = DISTRICTS.find((d) => d.id === state.districtId) || DISTRICTS[31];
+        fetch3DayRain(initialDistrict).then(() => recomputeAndRenderPlan());
+
+        $('lang-switch-btn')?.addEventListener('click', () => {
+          AudioPlayer.stop();
+          stopActiveRecognition();
+          state.lang = state.lang === 'en' ? 'te' : 'en';
+          applyLanguageUI();
+          if (state.tourIndex >= 0) startOrAdvanceTour(state.tourIndex);
+        });
+
+        $('dark-mode-btn')?.addEventListener('click', () => {
+          state.darkMode = !state.darkMode;
+          document.documentElement.classList.toggle('dark', state.darkMode);
+          localStorage.setItem('kharifshield_dark', String(state.darkMode));
+          const icon = $('dark-mode-icon');
+          const label = $('dark-mode-label');
+          const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.en;
+          if (icon) icon.textContent = state.darkMode ? '☀️' : '🌙';
+          if (label) label.textContent = state.darkMode ? dict.lightModeBtn : dict.darkModeBtn;
+        });
+
+        $('guide-tour-btn')?.addEventListener('click', () => {
+          state.tourMinimized = false;
+          startOrAdvanceTour(0);
+        });
+        $('tour-minimize-btn')?.addEventListener('click', () => {
+          state.tourMinimized = !state.tourMinimized;
+          syncTourMinimizedUI();
+        });
+        $('tour-continue-btn')?.addEventListener('click', () => startOrAdvanceTour(state.tourIndex + 1));
+        $('tour-exit-btn')?.addEventListener('click', () => stopTour());
+
+        $('nav-tab-farmer')?.addEventListener('click', () => switchMainTab('farmer'));
+        $('nav-tab-judges')?.addEventListener('click', () => switchMainTab('judges'));
+
+        // Judges Tab Clickable Accordion Cards
+        document.querySelectorAll('.judge-acc-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const item = btn.closest('.judge-acc-item');
+            const body = item?.querySelector('.judge-acc-body');
+            const icon = item?.querySelector('.judge-acc-icon');
+            if (!body) return;
+            const isHidden = body.classList.contains('hidden');
+            body.classList.toggle('hidden', !isHidden);
+            if (icon) icon.textContent = isHidden ? '▲' : '▼';
+          });
+        });
+
+        $('district-dropdown')?.addEventListener('change', (e) => {
+          state.districtId = e.target.value;
+          $('outside-telangana-alert')?.classList.add('hidden');
+          updateUrbanNote();
+          const d = DISTRICTS.find((x) => x.id === state.districtId) || DISTRICTS[31];
+          fetch3DayRain(d).then(() => recomputeAndRenderPlan());
+        });
+
+        $('crop-age-dropdown')?.addEventListener('change', (e) => {
+          state.cropAge = e.target.value;
+          recomputeAndRenderPlan();
+        });
+
+        document.querySelectorAll('.soil-tap-card').forEach((card) => {
+          card.addEventListener('click', () => {
+            state.soil = card.getAttribute('data-soil') || 'mixed';
+            syncSoilSelectionUI(true);
+            recomputeAndRenderPlan();
+          });
+        });
+
+        document.querySelectorAll('.tank-tap-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.tankPct = Number(btn.getAttribute('data-tank')) || 50;
+            syncTankSelectionUI();
+            recomputeAndRenderPlan();
+          });
+        });
+
+        document.querySelectorAll('.popover-trigger').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const key = btn.getAttribute('data-help');
+            const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.en;
+            const box = $('help-popover-box');
+            const content = $('help-popover-content');
+            if (box && content && dict[key]) {
+              content.textContent = dict[key];
+              box.classList.remove('hidden');
+            }
+          });
+        });
+
+        $('close-help-popover')?.addEventListener('click', () => {
+          $('help-popover-box')?.classList.add('hidden');
+        });
+
+        $('close-voice-feedback')?.addEventListener('click', () => {
+          accumulatedTranscript = '';
+          stopActiveRecognition();
+          $('voice-feedback-box')?.classList.add('hidden');
+        });
+
+        $('stop-listening-btn')?.addEventListener('click', () => {
+          const finalCaptured = accumulatedTranscript.trim();
+          accumulatedTranscript = '';
+          stopActiveRecognition();
+          if (finalCaptured) applySpokenResult(finalCaptured, 'details');
+        });
+
+        $('speak-details-btn')?.addEventListener('click', () => triggerSpeechInput('details'));
+
+        document.querySelectorAll('.sample-voice-chip').forEach((chip) => {
+          chip.addEventListener('click', () => {
+            const phrase = chip.getAttribute('data-phrase') || '';
+            applySpokenResult(phrase, 'details');
+          });
+        });
+
+        $('sandbox-voice-apply-btn')?.addEventListener('click', () => {
+          const val = ($('sandbox-voice-input')?.value || '').trim();
+          if (val) applySpokenResult(val, 'details');
+        });
+
+        $('check-water-plan-btn')?.addEventListener('click', async () => {
+          const btn = $('check-water-plan-btn');
+          const spinner = $('plan-btn-spinner');
+          const icon = $('plan-btn-icon');
+          const txt = $('plan-btn-text');
+          const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.en;
+
+          if (btn) btn.disabled = true;
+          spinner?.classList.remove('hidden');
+          icon?.classList.add('hidden');
+          if (txt) txt.textContent = dict.checkingPlanBtn;
+
+          const d = DISTRICTS.find((x) => x.id === state.districtId) || DISTRICTS[31];
+          await fetch3DayRain(d);
+          recomputeAndRenderPlan();
+
+          if (btn) btn.disabled = false;
+          spinner?.classList.add('hidden');
+          icon?.classList.remove('hidden');
+          if (txt) txt.textContent = dict.checkPlanBtn;
+
+          if (state.tourIndex === 0) {
+            startOrAdvanceTour(1);
+          } else {
+            const s2 = $('step2-section');
+            if (s2) {
+              s2.classList.add('tour-focus-ring');
+              s2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              setTimeout(() => {
+                if (state.tourIndex !== 1) s2.classList.remove('tour-focus-ring');
+              }, 2200);
+            }
+          }
+        });
+
+        $('read-summary-aloud-btn')?.addEventListener('click', () => {
+          if (state.currentPlan) {
+            AudioPlayer.speak(
+              state.currentPlan.summarySpeech,
+              state.lang === 'te' ? 'సారాంశం ఆడియో' : 'Summary Audio'
+            );
+          }
+        });
+
+        $('open-detailed-report-btn')?.addEventListener('click', () => {
+          $('detailed-report-modal')?.classList.remove('hidden');
+        });
+
+        const closeReportModal = () => {
+          $('detailed-report-modal')?.classList.add('hidden');
+          AudioPlayer.stop();
+        };
+
+        $('close-detailed-report-btn')?.addEventListener('click', closeReportModal);
+        $('detailed-report-modal')?.addEventListener('click', (e) => {
+          if (e.target === $('detailed-report-modal')) closeReportModal();
+        });
+
+        $('read-detailed-report-btn')?.addEventListener('click', () => {
+          if (!state.currentPlan) return;
+          const fullSpeech = state.currentPlan.reportCards.map((c) => `${c.title}. ${c.body}`).join(' ');
+          AudioPlayer.speak(
+            fullSpeech,
+            state.lang === 'te' ? 'పూర్తి నివేదిక' : 'Detailed Report'
+          );
+        });
+
+        $('audio-pill-pause-btn')?.addEventListener('click', () => AudioPlayer.togglePause());
+        $('audio-pill-stop-btn')?.addEventListener('click', () => AudioPlayer.stop());
+
+        document.querySelectorAll('.chat-suggestion-chip').forEach((chip) => {
+          chip.addEventListener('click', () => handleAskAI(chip.textContent.trim()));
+        });
+
+        $('chat-send-btn')?.addEventListener('click', () => {
+          handleAskAI($('chat-text-input')?.value || '');
+        });
+
+        $('chat-text-input')?.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAskAI($('chat-text-input')?.value || '');
+          }
+        });
+
+        $('chat-voice-btn')?.addEventListener('click', () => triggerSpeechInput('chat'));
+        $('chat-clear-btn')?.addEventListener('click', () => resetChatGreeting());
+
+        const syncCycloneBannerState = () => {
+          const banner = $('cyclone-alert-banner');
+          const btnTxt = $('judge-cyclone-btn-text');
+          const dict = TRANSLATIONS[state.lang] || TRANSLATIONS.en;
+          if (state.cycloneSimulated) {
+            banner?.classList.remove('hidden');
+            if (btnTxt) btnTxt.textContent = dict.deactivateCycloneBtn;
+          } else {
+            banner?.classList.add('hidden');
+            if (btnTxt) btnTxt.textContent = dict.activateCycloneBtn;
+          }
+          recomputeAndRenderPlan();
+        };
+
+        $('judge-cyclone-toggle-btn')?.addEventListener('click', () => {
+          state.cycloneSimulated = !state.cycloneSimulated;
+          syncCycloneBannerState();
+        });
+
+        $('banner-stop-cyclone-btn')?.addEventListener('click', () => {
+          state.cycloneSimulated = false;
+          syncCycloneBannerState();
+        });
+
+        $('open-gemini-modal-btn')?.addEventListener('click', () => {
+          $('gemini-key-modal')?.classList.remove('hidden');
+        });
+        $('close-gemini-modal-btn')?.addEventListener('click', () => {
+          $('gemini-key-modal')?.classList.add('hidden');
+        });
+        $('save-gemini-key-btn')?.addEventListener('click', () => {
+          const val = ($('gemini-api-input')?.value || '').trim();
+          const status = $('gemini-save-status');
+          if (val) {
+            localStorage.setItem('kharifshield_gemini_api_key', val);
+            const badge = $('ai-status-badge');
+            if (badge) {
+              badge.setAttribute('data-i18n', 'aiLiveTag');
+              badge.textContent = (TRANSLATIONS[state.lang] || TRANSLATIONS.en).aiLiveTag;
+            }
+            if (status) {
+              status.textContent = state.lang === 'te' ? '✓ కీ సేవ్ చేయబడింది.' : '✓ Gemini API key saved locally.';
+              status.classList.remove('hidden');
+            }
+          }
+        });
+        $('clear-gemini-key-btn')?.addEventListener('click', () => {
+          localStorage.removeItem('kharifshield_gemini_api_key');
+          const inp = $('gemini-api-input');
+          if (inp) inp.value = '';
+          const badge = $('ai-status-badge');
+          if (badge) {
+            badge.setAttribute('data-i18n', 'aiOfflineTag');
+            badge.textContent = (TRANSLATIONS[state.lang] || TRANSLATIONS.en).aiOfflineTag;
+          }
+          const status = $('gemini-save-status');
+          if (status) {
+            status.textContent = state.lang === 'te' ? 'కీ తొలగించబడింది.' : 'API key cleared.';
+            status.classList.remove('hidden');
+          }
+        });
+
+        // Escape key handler to cleanly close open modals
+        document.addEventListener('keydown', (e) => {
+          if (e.key !== 'Escape') return;
+          const reportModal = $('detailed-report-modal');
+          const geminiModal = $('gemini-key-modal');
+          if (reportModal && !reportModal.classList.contains('hidden')) {
+            closeReportModal();
+          } else if (geminiModal && !geminiModal.classList.contains('hidden')) {
+            geminiModal.classList.add('hidden');
+          }
+        });
+
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.getVoices();
+          window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+          };
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeApp);
+      } else {
+        initializeApp();
+      }
+    })();
+  </script>
+</body>
+</html>
